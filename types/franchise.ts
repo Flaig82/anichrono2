@@ -41,3 +41,6 @@ export const FRANCHISE_STATUSES = [
 ] as const;
 
 export type FranchiseStatus = (typeof FRANCHISE_STATUSES)[number];
+
+// Re-export the canonical EntryData from proposal.ts
+export type { EntryData } from "./proposal";

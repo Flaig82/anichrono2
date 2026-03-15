@@ -54,6 +54,7 @@ const config: Config = {
           muted: "var(--aura-muted)",
           muted2: "var(--aura-muted2)",
           orange: "var(--aura-orange)",
+          "orange-hover": "var(--aura-orange-hover)",
           "orange-l": "var(--aura-orange-l)",
         },
 
@@ -62,7 +63,7 @@ const config: Config = {
         scholar: "var(--aura-scholar)",
         oracle: "var(--aura-oracle)",
         sensei: "var(--aura-sensei)",
-        veteran: "var(--aura-veteran)",
+        foundation: "var(--aura-foundation)",
         archivist: "var(--aura-archivist)",
 
         /* ── Entry type colors ── */
@@ -83,9 +84,8 @@ const config: Config = {
       },
 
       fontFamily: {
-        display: ["var(--font-syne)", "sans-serif"],
-        body: ["var(--font-syne)", "sans-serif"],
-        mono: ["var(--font-jetbrains)", "monospace"],
+        brand: ["var(--font-montserrat)", "sans-serif"],
+        body: ["var(--font-lato)", "sans-serif"],
       },
     },
   },

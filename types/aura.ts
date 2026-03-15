@@ -3,7 +3,7 @@ export const AURA_TYPES = [
   "scholar",
   "oracle",
   "sensei",
-  "veteran",
+  "aura",
   "archivist",
 ] as const;
 
@@ -14,17 +14,17 @@ export const AURA_COLORS: Record<AuraType, string> = {
   scholar: "#8B5CF6",
   oracle: "#EC4899",
   sensei: "#F59E0B",
-  veteran: "#10B981",
+  aura: "#25EB7E",
   archivist: "#F97316",
 };
 
-export const AURA_EMOJI: Record<AuraType, string> = {
-  pioneer: "🧭",
-  scholar: "📖",
-  oracle: "🔮",
-  sensei: "🧑‍🏫",
-  veteran: "📜",
-  archivist: "🗺️",
+export const AURA_LABELS: Record<AuraType, string> = {
+  pioneer: "Pioneer",
+  scholar: "Scholar",
+  oracle: "Oracle",
+  sensei: "Sensei",
+  aura: "Aura",
+  archivist: "Archivist",
 };
 
 export const ERA_LIST = [
