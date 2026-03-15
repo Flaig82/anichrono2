@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Check, ScrollText } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuests } from "@/hooks/use-quests";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import SectionLabel from "@/components/shared/SectionLabel";
 import Link from "next/link";
@@ -11,30 +12,21 @@ import { ArrowRight } from "lucide-react";
 /* ── Aura type gradient backgrounds ── */
 
 const AURA_GRADIENTS: Record<string, string> = {
-  pioneer:
-    "radial-gradient(ellipse at bottom center, rgba(59,130,246,0.20) 0%, rgba(49,49,49,0) 70%)",
-  scholar:
+  aura:
     "radial-gradient(ellipse at bottom center, rgba(37,235,126,0.20) 0%, rgba(49,49,49,0) 70%)",
-  oracle:
-    "radial-gradient(ellipse at bottom center, rgba(236,72,153,0.20) 0%, rgba(49,49,49,0) 70%)",
-  sensei:
-    "radial-gradient(ellipse at bottom center, rgba(245,158,11,0.20) 0%, rgba(49,49,49,0) 70%)",
-  veteran:
-    "radial-gradient(ellipse at bottom center, rgba(16,185,129,0.20) 0%, rgba(49,49,49,0) 70%)",
+  scholar:
+    "radial-gradient(ellipse at bottom center, rgba(139,92,246,0.20) 0%, rgba(49,49,49,0) 70%)",
   archivist:
     "radial-gradient(ellipse at bottom center, rgba(249,115,22,0.20) 0%, rgba(49,49,49,0) 70%)",
 };
 
 const AURA_DOT_COLORS: Record<string, string> = {
-  pioneer: "bg-aura-pioneer",
-  scholar: "bg-emerald-400",
-  oracle: "bg-aura-oracle",
-  sensei: "bg-aura-sensei",
-  veteran: "bg-aura-veteran",
-  archivist: "bg-aura-archivist",
+  aura: "bg-foundation",
+  scholar: "bg-scholar",
+  archivist: "bg-archivist",
 };
 
-/* ── Types ── */
+/* ── Types (for the internal card, mapped from QuestWithProgress) ── */
 
 interface WeeklyQuest {
   id: string;
@@ -44,37 +36,6 @@ interface WeeklyQuest {
   auraAmount: number;
   completed: boolean;
 }
-
-/* ── Placeholder quests (until quest system is wired to DB) ── */
-
-const PLACEHOLDER_QUESTS: WeeklyQuest[] = [
-  {
-    id: "wq-1",
-    title: "Complete 2 episodes from any Chronicle",
-    description:
-      "Make progress on any active Chronicle this week.",
-    auraType: "veteran",
-    auraAmount: 40,
-    completed: false,
-  },
-  {
-    id: "wq-2",
-    title: "Vote on a Chronicle proposal",
-    description:
-      "Help the community decide which watch orders are worthy of approval.",
-    auraType: "archivist",
-    auraAmount: 20,
-    completed: false,
-  },
-  {
-    id: "wq-3",
-    title: "Rate a completed show",
-    description: "Leave a score on something in your completed list.",
-    auraType: "scholar",
-    auraAmount: 15,
-    completed: true,
-  },
-];
 
 /* ── Countdown hook (resets Monday 00:00 UTC) ── */
 
@@ -190,11 +151,22 @@ function QuestCard({ quest }: { quest: WeeklyQuest }) {
 /* ── Main component ── */
 
 export default function WeeklyQuests() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { quests: weeklyQuests, isLoading: questsLoading } = useQuests("weekly");
   const resetIn = useResetCountdown();
 
   // Only render for logged-in users
-  if (isLoading || !user) return null;
+  if (authLoading || !user) return null;
+
+  // Map DB quests to the internal card format, take first 3
+  const displayQuests: WeeklyQuest[] = weeklyQuests.slice(0, 3).map((q) => ({
+    id: q.id,
+    title: q.title,
+    description: q.description,
+    auraType: q.aura_type,
+    auraAmount: q.aura_amount,
+    completed: q.completed,
+  }));
 
   return (
     <section className="flex flex-col gap-5">
@@ -217,9 +189,18 @@ export default function WeeklyQuests() {
 
       {/* Quest cards */}
       <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
-        {PLACEHOLDER_QUESTS.map((quest) => (
-          <QuestCard key={quest.id} quest={quest} />
-        ))}
+        {questsLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[180px] flex-1 animate-pulse rounded-xl bg-aura-bg3"
+            />
+          ))
+        ) : (
+          displayQuests.map((quest) => (
+            <QuestCard key={quest.id} quest={quest} />
+          ))
+        )}
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ListOrdered } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 
@@ -9,6 +10,7 @@ interface ChronicleCardProps {
   title: string;
   season: string;
   updatedBy: string;
+  updatedByHandle?: string | null;
   avatarSrc: string;
 }
 
@@ -17,6 +19,7 @@ export default function ChronicleCard({
   title,
   season,
   updatedBy,
+  updatedByHandle,
   avatarSrc,
 }: ChronicleCardProps) {
   const { containerRef, canvasRef } = useDitherHover();
@@ -54,9 +57,18 @@ export default function ChronicleCard({
               <div className="relative h-5 w-5 overflow-hidden rounded-full">
                 <Image src={avatarSrc} alt={updatedBy} fill className="object-cover" />
               </div>
-              <span className="font-body text-xs tracking-[-0.12px] text-white">
-                Updated by {updatedBy}
-              </span>
+              {updatedByHandle ? (
+                <Link
+                  href={`/u/${updatedByHandle}`}
+                  className="font-body text-xs tracking-[-0.12px] text-white hover:text-aura-orange transition-colors"
+                >
+                  Updated by {updatedBy}
+                </Link>
+              ) : (
+                <span className="font-body text-xs tracking-[-0.12px] text-white">
+                  Updated by {updatedBy}
+                </span>
+              )}
             </div>
           </div>
         </div>

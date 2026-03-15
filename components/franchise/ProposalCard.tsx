@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronDown, ChevronRight, User } from "lucide-react";
+import { getRelativeTime } from "@/lib/utils";
 import type { OrderProposal, EntryData } from "@/types/proposal";
 import VoteButtons from "./VoteButtons";
 import ProposalDiffView from "./ProposalDiffView";
@@ -82,9 +84,12 @@ export default function ProposalCard({
               ) : (
                 <User size={12} className="text-aura-muted" />
               )}
-              <span className="font-body text-[11px] text-aura-muted2">
+              <Link
+                href={`/u/${proposal.author?.handle ?? proposal.author_id}`}
+                className="font-body text-[11px] text-aura-muted2 hover:text-white transition-colors"
+              >
                 {proposal.author?.display_name ?? "Unknown"}
-              </span>
+              </Link>
             </div>
 
             <span className="text-aura-muted">·</span>
@@ -124,16 +129,4 @@ export default function ProposalCard({
       )}
     </div>
   );
-}
-
-function getRelativeTime(dateString: string): string {
-  const diff = Date.now() - new Date(dateString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
 }

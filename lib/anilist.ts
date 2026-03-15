@@ -315,6 +315,7 @@ export interface AniListSeasonalMedia {
   popularity: number | null;
   episodes: number | null;
   format: string | null;
+  genres: string[];
   /** AniList IDs of all prequels/parents — used to match back to a franchise */
   relatedIds: number[];
 }
@@ -330,6 +331,7 @@ const SEASONAL_TRENDING_QUERY = `
         popularity
         episodes
         format
+        genres
         relations {
           edges {
             relationType
@@ -349,6 +351,7 @@ interface SeasonalRawMedia {
   popularity: number | null;
   episodes: number | null;
   format: string | null;
+  genres: string[];
   relations: {
     edges: { relationType: string; node: { id: number } }[];
   };
@@ -390,6 +393,7 @@ export async function fetchSeasonalTrending(
       popularity: m.popularity,
       episodes: m.episodes,
       format: m.format,
+      genres: m.genres ?? [],
       relatedIds,
     };
   });

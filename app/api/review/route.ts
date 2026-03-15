@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { createReviewSchema } from "@/lib/validations/review";
 import { awardAura } from "@/lib/aura";
+import { progressQuests } from "@/lib/quests";
 
 const SCHOLAR_REVIEW_AURA = 20;
 
@@ -108,10 +109,14 @@ export async function POST(request: Request) {
     },
   });
 
+  // Progress quests
+  const completedQuests = await progressQuests(supabase, user.id, "write_review", 1);
+
   return NextResponse.json({
     review,
     auraAwarded: SCHOLAR_REVIEW_AURA,
     totalAura,
     era,
+    completedQuests,
   });
 }

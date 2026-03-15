@@ -65,17 +65,19 @@ async function getRecentlyUpdatedFranchises() {
   // Find the most recent proposal author per franchise (if any)
   const { data: proposals } = await supabase
     .from("order_proposal")
-    .select("franchise_id, author_id, created_at, users:author_id(display_name, avatar_url)")
+    .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
     .in("franchise_id", franchiseIds)
     .order("created_at", { ascending: false });
 
-  const lastEditorMap = new Map<string, { name: string; avatar: string | null }>();
+  const lastEditorMap = new Map<string, { name: string; handle: string | null; id: string; avatar: string | null }>();
   for (const p of proposals ?? []) {
     if (!lastEditorMap.has(p.franchise_id)) {
-      const user = p.users as unknown as { display_name: string; avatar_url: string | null } | null;
+      const user = p.users as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
       if (user) {
         lastEditorMap.set(p.franchise_id, {
           name: user.display_name,
+          handle: user.handle,
+          id: p.author_id,
           avatar: user.avatar_url,
         });
       }
@@ -98,6 +100,7 @@ async function getRecentlyUpdatedFranchises() {
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
       updatedByUser: wasEdited ? editor.name : "Pyrat",
+      updatedByHandle: wasEdited ? (editor.handle ?? editor.id) : null,
       updatedByAvatar: (wasEdited ? editor.avatar : undefined) ?? undefined,
       wasEdited: !!wasEdited,
     };

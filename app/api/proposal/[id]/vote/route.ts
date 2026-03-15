@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { voteSchema } from "@/lib/validations/proposal";
 import { NextResponse } from "next/server";
+import { progressQuests, type CompletedQuest } from "@/lib/quests";
 
 const APPLY_THRESHOLD = 10;
 const REJECT_THRESHOLD = -5;
@@ -66,6 +67,7 @@ export async function POST(
     .single();
 
   let scoreDelta = result.data.value;
+  let completedQuests: CompletedQuest[] = [];
 
   if (existingVote) {
     if (existingVote.value === result.data.value) {
@@ -100,6 +102,9 @@ export async function POST(
         { status: 500 },
       );
     }
+
+    // Progress quests on new vote (not vote changes)
+    completedQuests = await progressQuests(supabase, user.id, "vote_proposal", 1);
   }
 
   // Update vote_score on proposal
@@ -133,7 +138,7 @@ export async function POST(
       .eq("id", proposalId);
   }
 
-  return NextResponse.json({ vote_score: newScore });
+  return NextResponse.json({ vote_score: newScore, completedQuests });
 }
 
 /** DELETE /api/proposal/[id]/vote — remove the current user's vote */

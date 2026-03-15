@@ -58,13 +58,12 @@ const config: Config = {
           "orange-l": "var(--aura-orange-l)",
         },
 
-        /* ── Six Aura types ── */
-        pioneer: "var(--aura-pioneer)",
-        scholar: "var(--aura-scholar)",
-        oracle: "var(--aura-oracle)",
-        sensei: "var(--aura-sensei)",
+        /* ── Three Aura types ── */
         foundation: "var(--aura-foundation)",
+        scholar: "var(--aura-scholar)",
         archivist: "var(--aura-archivist)",
+        oracle: "var(--aura-oracle)",
+        "oracle-l": "var(--aura-oracle-l)",
 
         /* ── Entry type colors ── */
         entry: {

@@ -13,7 +13,7 @@ export async function GET(
   const { data: pending } = await supabase
     .from("order_proposal")
     .select(
-      "id, title, description, vote_score, status, created_at, author:users!author_id(display_name, avatar_url)",
+      "id, author_id, title, description, vote_score, status, created_at, author:users!author_id(display_name, handle, avatar_url)",
     )
     .eq("franchise_id", franchiseId)
     .in("status", ["open", "pending_approval"])
@@ -24,7 +24,7 @@ export async function GET(
   const { data: recent } = await supabase
     .from("order_proposal")
     .select(
-      "id, title, description, vote_score, applied_at, created_at, author:users!author_id(display_name, avatar_url)",
+      "id, author_id, title, description, vote_score, applied_at, created_at, author:users!author_id(display_name, handle, avatar_url)",
     )
     .eq("franchise_id", franchiseId)
     .eq("status", "applied")

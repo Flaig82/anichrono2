@@ -1,166 +1,45 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Bookmark,
   Heart,
-  Eye,
-  ListPlus,
-  Star,
-  CheckCircle2,
-  FilePlus2,
   GitPullRequestArrow,
   Plus,
-  RefreshCw,
 } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { useLiveActivity, useContentUpdates } from "@/hooks/use-activity-feed";
+import { getRelativeTime } from "@/lib/utils";
+import type { LiveActivityItem, ContentUpdateItem } from "@/types/activity";
 
-/* ── Rapid user activity (top section) ── */
+/* ── Action display mapping ── */
 
-interface LiveItem {
-  user: string;
-  avatar: string;
-  action: string;
-  title: string;
-  timestamp: string;
-}
-
-const liveItems: LiveItem[] = [
-  {
-    user: "Pyrat",
-    avatar: "/images/avatar-1.svg",
-    action: "completed",
-    title: "One Piece — Egghead Arc",
-    timestamp: "2m ago",
-  },
-  {
-    user: "ArcaneWatcher",
-    avatar: "/images/avatar-2.svg",
-    action: "added to watchlist",
-    title: "Solo Leveling Season 2",
-    timestamp: "5m ago",
-  },
-  {
-    user: "GhostInTheShell",
-    avatar: "/images/avatar-3.svg",
-    action: "rated 9.2",
-    title: "Dandadan",
-    timestamp: "8m ago",
-  },
-  {
-    user: "NeonSamurai",
-    avatar: "/images/avatar-4.svg",
-    action: "started watching",
-    title: "Blue Lock Season 2",
-    timestamp: "12m ago",
-  },
-  {
-    user: "MidnightCrow",
-    avatar: "/images/avatar-1.svg",
-    action: "completed",
-    title: "Vinland Saga Season 2",
-    timestamp: "15m ago",
-  },
-  {
-    user: "Spectra",
-    avatar: "/images/avatar-3.svg",
-    action: "dropped",
-    title: "Fairy Tail: 100 Years Quest",
-    timestamp: "22m ago",
-  },
-];
-
-const actionIcons: Record<string, typeof Eye> = {
-  completed: CheckCircle2,
-  "added to watchlist": ListPlus,
-  "started watching": Eye,
-  dropped: RefreshCw,
+const ACTION_LABELS: Record<string, string> = {
+  complete_entry: "watched",
+  start_watching: "started watching",
+  review: "reviewed",
+  rate: "rated",
+  drop: "dropped",
+  add_to_watchlist: "added to watchlist",
+  add_to_watchlist__plan_to_watch: "plans to watch",
+  add_to_watchlist__watching: "is watching",
+  add_to_watchlist__on_hold: "put on hold",
+  add_to_watchlist__dropped: "dropped",
 };
 
-function getActionIcon(action: string) {
-  if (action.startsWith("rated")) return Star;
-  return actionIcons[action] ?? Eye;
+function getActionLabel(item: LiveActivityItem): string {
+  if (item.type === "rate" && item.metadata?.score) {
+    return `rated ${item.metadata.score}`;
+  }
+  if (item.type === "add_to_watchlist" && item.metadata?.status) {
+    const key = `add_to_watchlist__${item.metadata.status}`;
+    if (ACTION_LABELS[key]) return ACTION_LABELS[key];
+  }
+  return ACTION_LABELS[item.type] ?? item.type;
 }
-
-/* ── Slower content updates (bottom section) ── */
-
-interface UpdateItem {
-  type: "chronicle" | "order" | "addition";
-  title: string;
-  description: string;
-  poster?: string;
-  liked?: boolean;
-  timestamp: string;
-}
-
-const updateItems: UpdateItem[] = [
-  {
-    type: "chronicle",
-    title: "Newcomer Route — Naruto",
-    description: "New chronicle created by ArcaneWatcher",
-    poster: "/images/poster-1.svg",
-    liked: false,
-    timestamp: "1h ago",
-  },
-  {
-    type: "order",
-    title: "Jujutsu Kaisen",
-    description: "Movie insertion approved at position 14",
-    liked: false,
-    timestamp: "2h ago",
-  },
-  {
-    type: "addition",
-    title: "Sakamoto Days",
-    description: "Added to franchise database",
-    poster: "/images/poster-5.svg",
-    liked: true,
-    timestamp: "3h ago",
-  },
-  {
-    type: "order",
-    title: "One Piece",
-    description: "Episode block split — Film Red inserted at ep 1085",
-    liked: false,
-    timestamp: "5h ago",
-  },
-  {
-    type: "chronicle",
-    title: "Manga Reader Route — Bleach",
-    description: "Chronicle promoted to canon status",
-    poster: "/images/poster-2.svg",
-    liked: true,
-    timestamp: "6h ago",
-  },
-  {
-    type: "addition",
-    title: "Solo Leveling: Ragnarok",
-    description: "Season 3 announced — prediction window open",
-    liked: false,
-    timestamp: "8h ago",
-  },
-  {
-    type: "order",
-    title: "Demon Slayer",
-    description: "Infinity Castle arc added to master order",
-    poster: "/images/poster-3.svg",
-    liked: true,
-    timestamp: "12h ago",
-  },
-  {
-    type: "chronicle",
-    title: "Completionist Route — Monogatari",
-    description: "Updated with Off Season entries",
-    liked: false,
-    timestamp: "1d ago",
-  },
-];
-
-const updateTypeIcons = {
-  chronicle: FilePlus2,
-  order: GitPullRequestArrow,
-  addition: Plus,
-} as const;
 
 /* ── Shared ── */
 
@@ -173,12 +52,63 @@ function PatternOverlay() {
   );
 }
 
+function AvatarFallback({ name }: { name: string | null }) {
+  const initial = (name ?? "?").charAt(0).toUpperCase();
+  return (
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-aura-bg4 font-body text-[13px] font-bold text-aura-muted2">
+      {initial}
+    </div>
+  );
+}
+
+/* ── Skeleton loader ── */
+
+function LiveSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i}>
+          <div className="flex items-start gap-6 animate-pulse">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-white/[0.06]" />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <div className="h-3.5 w-28 rounded bg-white/[0.06]" />
+              <div className="h-3 w-44 rounded bg-white/[0.06]" />
+            </div>
+          </div>
+          {i < 3 && <div className="mt-4 h-px bg-white/[0.06]" />}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function UpdatesSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="relative flex flex-col gap-3.5 overflow-hidden rounded-lg p-5 animate-pulse">
+          <PatternOverlay />
+          <div className="flex items-start gap-3.5">
+            <div className="h-4 w-4 shrink-0 rounded bg-white/[0.06]" />
+            <div className="flex flex-1 flex-col gap-1.5">
+              <div className="h-3 w-32 rounded bg-white/[0.06]" />
+              <div className="h-3 w-48 rounded bg-white/[0.06]" />
+            </div>
+          </div>
+          <div className="h-px bg-white/[0.06]" />
+          <div className="h-3 w-16 rounded bg-white/[0.06]" />
+        </div>
+      ))}
+    </>
+  );
+}
+
 /* ── Update card (bottom feed) ── */
 
-function UpdateCard({ item }: { item: UpdateItem }) {
+function UpdateCard({ item }: { item: ContentUpdateItem }) {
   const { containerRef, canvasRef } = useDitherHover();
 
-  const Icon = updateTypeIcons[item.type];
+  const Icon = item.kind === "proposal_applied" ? GitPullRequestArrow : Plus;
 
   return (
     <div
@@ -221,25 +151,15 @@ function UpdateCard({ item }: { item: UpdateItem }) {
       {/* Footer */}
       <div className="flex items-center gap-2.5">
         <span className="flex-1 font-body text-[12px] tracking-[-0.12px] text-white/50">
-          {item.timestamp}
+          {getRelativeTime(item.created_at)}
         </span>
 
         <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
           <Bookmark size={12} className="text-white/50" />
         </button>
-
-        {item.liked ? (
-          <button
-            className="flex h-6 w-6 items-center justify-center rounded-full border-b border-aura-orange-hover bg-aura-orange transition-colors"
-            style={{ boxShadow: "0px 4px 14px rgba(255, 131, 74, 0.48)" }}
-          >
-            <Heart size={12} className="text-white" />
-          </button>
-        ) : (
-          <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
-            <Heart size={12} className="text-white/50" />
-          </button>
-        )}
+        <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
+          <Heart size={12} className="text-white/50" />
+        </button>
       </div>
     </div>
   );
@@ -247,53 +167,120 @@ function UpdateCard({ item }: { item: UpdateItem }) {
 
 /* ── Main export ── */
 
+const itemVariants = {
+  initial: { opacity: 0, y: -12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 12 },
+};
+
 export default function HomeFeed() {
+  const { data: liveItems, isLoading: liveLoading } = useLiveActivity();
+  const { data: updateItems, isLoading: updatesLoading } = useContentUpdates();
+
+  // Track IDs we've already rendered so we only animate truly new items
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const isInitialLoad = useRef(true);
+
+  useEffect(() => {
+    if (liveItems && liveItems.length > 0) {
+      if (isInitialLoad.current) {
+        // On first load, mark all as seen (no animation)
+        liveItems.forEach((item) => seenIdsRef.current.add(item.id));
+        isInitialLoad.current = false;
+      } else {
+        // On subsequent polls, new IDs will animate, then get marked seen
+        const timer = setTimeout(() => {
+          liveItems.forEach((item) => seenIdsRef.current.add(item.id));
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [liveItems]);
+
   return (
     <>
-      {/* ── Live Activity (rapid) ── */}
+      {/* ── The Feed ── */}
       <div className="relative flex flex-col gap-6 overflow-hidden rounded-lg bg-aura-bg3 p-6">
         <PatternOverlay />
         {/* Header */}
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-aura-orange-hover" />
           <span className="font-brand text-[14px] font-bold tracking-[-0.7px] text-aura-orange-hover">
-            Live
+            The Feed
           </span>
         </div>
 
-        {/* Activity stream */}
-        {liveItems.map((item, i) => {
-          const Icon = getActionIcon(item.action);
-          return (
-            <div key={i}>
-              <div className="flex items-start gap-3.5">
-                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
-                  <Image src={item.avatar} alt="" fill className="object-cover" />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-body text-[13px] font-bold tracking-[-0.26px] text-white">
-                      {item.user}
-                    </p>
-                    <Icon size={12} className="shrink-0 text-aura-muted" />
-                    <span className="truncate font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
-                      {item.action}
-                    </span>
-                  </div>
-                  <p className="font-body text-[13px] tracking-[-0.26px] text-white/80">
-                    {item.title}
-                  </p>
-                </div>
-                <span className="shrink-0 pt-0.5 font-mono text-[10px] text-aura-muted">
-                  {item.timestamp}
-                </span>
-              </div>
-              {i < liveItems.length - 1 && (
-                <div className="mt-6 h-px bg-white/[0.06]" />
-              )}
-            </div>
-          );
-        })}
+        {/* Intro headline */}
+        <div className="flex items-center justify-center py-6">
+          <p className="w-[252px] font-body text-2xl font-bold tracking-[-0.48px] text-white">
+            See what the community is watching right now.
+          </p>
+        </div>
+
+        {/* Activity stream — scrollable */}
+        <div className="max-h-[480px] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+          <div className="flex flex-col gap-4">
+            {liveLoading ? (
+              <LiveSkeleton />
+            ) : !liveItems || liveItems.length === 0 ? (
+              <p className="py-4 text-center font-body text-[12px] text-aura-muted">
+                No recent activity
+              </p>
+            ) : (
+              <AnimatePresence initial={false}>
+                {liveItems.map((item, i) => {
+                  const userName = item.user?.display_name ?? "Anonymous";
+                  const profileSlug = item.user?.handle ?? item.user_id;
+                  const franchiseTitle = item.franchise?.title;
+                  const entryTitle = item.entry?.title;
+                  const displayTitle = franchiseTitle && entryTitle
+                    ? `${franchiseTitle} — ${entryTitle}`
+                    : entryTitle ?? franchiseTitle ?? "Unknown";
+                  const isNew = !seenIdsRef.current.has(item.id);
+                  return (
+                    <motion.div
+                      key={item.id}
+                      variants={itemVariants}
+                      initial={isNew ? "initial" : false}
+                      animate="animate"
+                      exit="exit"
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                    >
+                      <div className="flex items-start gap-6">
+                        <Link href={`/u/${profileSlug}`} className="shrink-0">
+                          {item.user?.avatar_url ? (
+                            <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                              <Image src={item.user.avatar_url} alt="" fill className="object-cover" />
+                            </div>
+                          ) : (
+                            <AvatarFallback name={userName} />
+                          )}
+                        </Link>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <p className="font-body text-[14px] font-bold tracking-[-0.28px] text-white">
+                            <Link
+                              href={`/u/${profileSlug}`}
+                              className="hover:text-aura-orange transition-colors"
+                            >
+                              {userName}
+                            </Link>{" "}
+                            <span className="font-normal text-aura-muted2">{getActionLabel(item)}</span>
+                          </p>
+                          <p className="font-body text-[12px] tracking-[-0.12px] text-white/80">
+                            {displayTitle}
+                          </p>
+                        </div>
+                      </div>
+                      {i < liveItems.length - 1 && (
+                        <div className="mt-4 h-px bg-white/[0.06]" />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── Updates (slower content feed) ── */}
@@ -305,9 +292,20 @@ export default function HomeFeed() {
           </span>
         </div>
 
-        {updateItems.map((item, i) => (
-          <UpdateCard key={i} item={item} />
-        ))}
+        {updatesLoading ? (
+          <UpdatesSkeleton />
+        ) : !updateItems || updateItems.length === 0 ? (
+          <div className="relative overflow-hidden rounded-lg p-5">
+            <PatternOverlay />
+            <p className="text-center font-body text-[12px] text-aura-muted">
+              No recent updates
+            </p>
+          </div>
+        ) : (
+          updateItems.map((item) => (
+            <UpdateCard key={item.id} item={item} />
+          ))
+        )}
       </div>
     </>
   );

@@ -3,6 +3,7 @@
 import useSWR, { useSWRConfig } from "swr";
 import { useCallback, useRef } from "react";
 import { useAuth } from "./use-auth";
+import { showQuestToasts } from "@/lib/quest-toast";
 
 interface WatchData {
   episodes_watched: number;
@@ -60,8 +61,11 @@ export function useWatchProgress(franchiseId: string) {
           }),
         });
         if (res.ok && user) {
+          const data = await res.json();
+          showQuestToasts(data.completedQuests);
           // Revalidate sidebar aura breakdown + profile
           globalMutate(`user-aura-${user.id}`);
+          globalMutate("/api/activity/live");
           refreshProfile();
         }
       }, DEBOUNCE_MS);

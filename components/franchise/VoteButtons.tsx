@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { showQuestToasts } from "@/lib/quest-toast";
 
 interface VoteButtonsProps {
   proposalId: string;
@@ -55,6 +56,7 @@ export default function VoteButtons({
           const data = await res.json();
           setScore(data.vote_score);
           setUserVote(value);
+          showQuestToasts(data.completedQuests);
         }
       }
     } finally {

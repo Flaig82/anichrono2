@@ -4,7 +4,7 @@ import useSWR from "swr";
 import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase";
-import { AURA_COLORS, AURA_LABELS, type AuraType } from "@/types/aura";
+import { AURA_COLORS, AURA_LABELS, AURA_TYPES, type AuraType } from "@/types/aura";
 
 interface AuraRow {
   aura_type: AuraType;
@@ -53,10 +53,17 @@ export default function SidebarAuraBreakdown() {
 
   if (!user || !profile) return null;
 
-  const nonZero = auraRows?.filter((r) => r.value > 0) ?? [];
-  if (nonZero.length === 0) return null;
+  // Build a map from fetched rows, then ensure all 3 types are represented
+  const auraMap = new Map<AuraType, number>();
+  for (const row of auraRows ?? []) {
+    auraMap.set(row.aura_type, row.value);
+  }
+  const allRows: AuraRow[] = AURA_TYPES.map((type) => ({
+    aura_type: type,
+    value: auraMap.get(type) ?? 0,
+  })).sort((a, b) => b.value - a.value);
 
-  const maxValue = nonZero[0]?.value ?? 1;
+  const maxValue = allRows[0]?.value || 1;
 
   return (
     <div className="relative overflow-hidden rounded-lg">
@@ -71,7 +78,7 @@ export default function SidebarAuraBreakdown() {
 
       <div className="relative flex flex-col gap-1">
         {/* User header */}
-        <div className="flex items-center gap-2 px-6 py-3.5">
+        <div className="flex items-center gap-2 px-4 py-2.5">
           <div className="flex items-center gap-2.5">
             <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-aura-bg4">
               {profile.avatar_url ? (
@@ -103,10 +110,10 @@ export default function SidebarAuraBreakdown() {
         </div>
 
         {/* Aura type rows */}
-        {nonZero.map((row) => (
+        {allRows.map((row) => (
           <div
             key={row.aura_type}
-            className="overflow-clip rounded-lg px-6 py-3.5"
+            className="overflow-clip rounded-lg px-4 py-2"
           >
             <div className="flex items-center justify-between">
               <div className="flex w-[160px] flex-col gap-2.5">

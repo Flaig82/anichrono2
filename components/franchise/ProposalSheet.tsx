@@ -3,25 +3,15 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import useSWR from "swr";
+import Link from "next/link";
 import { X, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { getRelativeTime } from "@/lib/utils";
 import type { OrderProposal, EntryData } from "@/types/proposal";
 import VoteButtons from "./VoteButtons";
 import ProposalDiffView from "./ProposalDiffView";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-function getRelativeTime(dateString: string): string {
-  const diff = Date.now() - new Date(dateString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
 
 const ERA_COLORS: Record<string, string> = {
   initiate: "text-aura-muted2",
@@ -146,9 +136,12 @@ export default function ProposalSheet({
                   </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="font-body text-[13px] font-bold text-white">
+                  <Link
+                    href={`/u/${proposal.author?.handle ?? proposal.author_id}`}
+                    className="font-body text-[13px] font-bold text-white hover:text-aura-orange transition-colors"
+                  >
                     {proposal.author?.display_name ?? "Unknown"}
-                  </span>
+                  </Link>
                   <span className="font-body text-[11px] text-aura-muted">
                     <span
                       className={

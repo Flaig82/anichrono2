@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
+import Link from "next/link";
 import { Star, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { showQuestToasts } from "@/lib/quest-toast";
 import { cn } from "@/lib/utils";
 
 interface ReviewAuthor {
@@ -62,10 +64,13 @@ export default function FranchiseReviews({ franchiseId }: FranchiseReviewsProps)
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(typeof data.error === "string" ? data.error : "Failed to submit review");
+        const errData = await res.json();
+        setError(typeof errData.error === "string" ? errData.error : "Failed to submit review");
         return;
       }
+
+      const data = await res.json();
+      showQuestToasts(data.completedQuests);
 
       setBody("");
       setScore(7);
@@ -73,6 +78,7 @@ export default function FranchiseReviews({ franchiseId }: FranchiseReviewsProps)
       setTimeout(() => setAuraFlash(false), 3000);
       mutate();
       if (user) globalMutate(`user-aura-${user.id}`);
+      globalMutate("/api/activity/live");
       refreshProfile();
     } finally {
       setSubmitting(false);
@@ -170,13 +176,19 @@ export default function FranchiseReviews({ franchiseId }: FranchiseReviewsProps)
                   </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="font-body text-[13px] font-bold text-white">
+                  <Link
+                    href={`/u/${review.users.handle ?? review.user_id}`}
+                    className="font-body text-[13px] font-bold text-white hover:text-aura-orange transition-colors"
+                  >
                     {review.users.display_name ?? "Anonymous"}
-                  </span>
+                  </Link>
                   {review.users.handle && (
-                    <span className="font-mono text-[11px] text-aura-muted">
+                    <Link
+                      href={`/u/${review.users.handle}`}
+                      className="font-mono text-[11px] text-aura-muted hover:text-aura-muted2 transition-colors"
+                    >
                       @{review.users.handle}
-                    </span>
+                    </Link>
                   )}
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">

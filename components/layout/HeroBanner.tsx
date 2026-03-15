@@ -2,18 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import useSWR from "swr";
 import { UserPlus } from "lucide-react";
 import SectionLabel from "@/components/shared/SectionLabel";
 import { useAuth } from "@/hooks/use-auth";
 
-const avatars = [
-  "/images/avatar-1.svg",
-  "/images/avatar-2.svg",
-  "/images/avatar-3.svg",
-  "/images/avatar-4.svg",
-];
+const statsFetcher = (url: string) => fetch(url).then((r) => r.json());
+
+interface OnlineUser {
+  avatar_url: string | null;
+  display_name: string | null;
+}
+
+interface OnlineStats {
+  count: number;
+  users: OnlineUser[];
+}
 
 function LoggedOutHero() {
+  const { data } = useSWR<OnlineStats>("/api/stats/online", statsFetcher, {
+    refreshInterval: 60_000,
+  });
+  const onlineCount = data?.count ?? 0;
+  const onlineUsers = data?.users ?? [];
+
   return (
     <div
       className="overflow-hidden rounded-xl px-6 py-8 md:px-10 md:py-10 lg:px-16 lg:py-12"
@@ -49,18 +61,28 @@ function LoggedOutHero() {
 
           {/* Avatar stack + members */}
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center pr-1.5">
-              {avatars.map((src, i) => (
-                <div
-                  key={i}
-                  className="relative -mr-1.5 h-6 w-6 overflow-hidden rounded-full border border-white"
-                >
-                  <Image src={src} alt="" fill className="object-cover" />
-                </div>
-              ))}
-            </div>
+            {onlineUsers.length > 0 && (
+              <div className="flex items-center pr-1.5">
+                {onlineUsers.map((u, i) => (
+                  <div
+                    key={i}
+                    className="relative -mr-1.5 h-6 w-6 overflow-hidden rounded-full border border-white bg-aura-bg4"
+                  >
+                    {u.avatar_url ? (
+                      <Image src={u.avatar_url} alt="" fill className="object-cover" />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white">
+                        {(u.display_name ?? "?").charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <span className="font-body text-xs leading-[1.62] tracking-[-0.12px] text-white">
-              4,497 Members Online
+              {onlineCount > 0
+                ? `${onlineCount.toLocaleString()} Member${onlineCount === 1 ? "" : "s"} Online`
+                : "Members Online"}
             </span>
           </div>
         </div>
@@ -72,6 +94,11 @@ function LoggedOutHero() {
 function LoggedInHero() {
   const profile = useAuth((s) => s.profile);
   const displayName = profile?.display_name ?? "there";
+  const { data } = useSWR<OnlineStats>("/api/stats/online", statsFetcher, {
+    refreshInterval: 60_000,
+  });
+  const onlineCount = data?.count ?? 0;
+  const onlineUsers = data?.users ?? [];
 
   return (
     <div
@@ -93,6 +120,33 @@ function LoggedInHero() {
             <br />
             Welcome back, {displayName}.
           </p>
+        </div>
+
+        {/* Avatar stack + members online */}
+        <div className="flex items-center gap-2.5">
+          {onlineUsers.length > 0 && (
+            <div className="flex items-center pr-1.5">
+              {onlineUsers.map((u, i) => (
+                <div
+                  key={i}
+                  className="relative -mr-1.5 h-6 w-6 overflow-hidden rounded-full border border-white bg-aura-bg4"
+                >
+                  {u.avatar_url ? (
+                    <Image src={u.avatar_url} alt="" fill className="object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white">
+                      {(u.display_name ?? "?").charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <span className="font-body text-xs leading-[1.62] tracking-[-0.12px] text-white">
+            {onlineCount > 0
+              ? `${onlineCount.toLocaleString()} Member${onlineCount === 1 ? "" : "s"} Online`
+              : "Members Online"}
+          </span>
         </div>
       </div>
     </div>

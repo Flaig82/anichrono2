@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import ProposalDiffView from "@/components/franchise/ProposalDiffView";
 import type { EntryData, OrderProposal } from "@/types/proposal";
@@ -146,9 +147,13 @@ export default function AdminProposalsPage() {
                   <div className="flex items-center gap-2 font-mono text-[11px] text-aura-muted">
                     <span>{proposal.franchise?.title ?? "Unknown franchise"}</span>
                     <span>·</span>
-                    <span>
+                    <Link
+                      href={`/u/${proposal.author?.handle ?? proposal.author_id}`}
+                      className="hover:text-aura-muted2 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       by {proposal.author?.display_name ?? "Unknown"}
-                    </span>
+                    </Link>
                     <span>·</span>
                     <span>
                       {new Date(proposal.created_at).toLocaleDateString()}

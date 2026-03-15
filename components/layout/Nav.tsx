@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { BookOpen, Compass, Eye, Swords, LogOut, Shield } from "lucide-react";
+import { BookOpen, Compass, Eye, Swords, LogOut, Shield, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -85,22 +85,34 @@ export default function Nav() {
               {profile.total_aura.toLocaleString()}
             </span>
             <div className="hidden h-4 w-px bg-[#313131] sm:block" />
-            {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.display_name}
-                width={28}
-                height={28}
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-aura-bg4 font-body text-xs font-bold text-white">
-                {profile.display_name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="hidden font-body text-[14px] font-bold tracking-[-0.28px] text-white md:inline">
-              {profile.display_name}
-            </span>
+            <Link
+              href={profile.handle ? `/u/${profile.handle}` : "/settings"}
+              className="flex items-center gap-3 transition-opacity hover:opacity-80"
+            >
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  width={28}
+                  height={28}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-aura-bg4 font-body text-xs font-bold text-white">
+                  {profile.display_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="hidden font-body text-[14px] font-bold tracking-[-0.28px] text-white md:inline">
+                {profile.display_name}
+              </span>
+            </Link>
+            <Link
+              href="/settings"
+              className="text-aura-muted transition-colors hover:text-white"
+              title="Settings"
+            >
+              <Settings size={16} />
+            </Link>
             <button
               onClick={logout}
               className="ml-1 text-aura-muted transition-colors hover:text-white"

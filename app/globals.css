@@ -24,13 +24,12 @@
     --aura-orange-hover: #FF7D45;
     --aura-orange-l: rgba(235, 99, 37, 0.12);
 
-    /* ── Six Aura types ── */
-    --aura-pioneer: #3B82F6;
-    --aura-scholar: #8B5CF6;
-    --aura-oracle: #EC4899;
-    --aura-sensei: #F59E0B;
+    /* ── Three Aura types ── */
     --aura-foundation: #25EB7E;
+    --aura-scholar: #8B5CF6;
     --aura-archivist: #F97316;
+    --aura-oracle: #EC4899;
+    --aura-oracle-l: rgba(236, 72, 153, 0.12);
 
     /* ── Entry type colors ── */
     --entry-episodes: #EEF0F6;
@@ -62,11 +61,9 @@
     --radius: 0.5rem;
 
     /* ── shadcn chart colors (aura types) ── */
-    --chart-1: #3B82F6;
+    --chart-1: #25EB7E;
     --chart-2: #8B5CF6;
-    --chart-3: #EC4899;
-    --chart-4: #F59E0B;
-    --chart-5: #10B981;
+    --chart-3: #F97316;
   }
 
   * {

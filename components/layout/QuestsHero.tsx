@@ -114,7 +114,7 @@ export default function QuestsHero() {
                   {ERA_EMOJI[nextEra]} {getEraLabel(nextEra)}
                 </span>
               ) : (
-                <span className="font-mono text-[11px] tracking-[0.15em] text-aura-sensei">
+                <span className="font-mono text-[11px] tracking-[0.15em] text-aura-orange">
                   Max era reached
                 </span>
               )}
@@ -123,7 +123,7 @@ export default function QuestsHero() {
             {/* Progress bar */}
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.08]">
               <div
-                className="h-full rounded-full bg-aura-sensei transition-all duration-500"
+                className="h-full rounded-full bg-aura-orange transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>

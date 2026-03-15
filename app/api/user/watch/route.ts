@@ -3,6 +3,76 @@ import { NextResponse } from "next/server";
 import { updateWatchSchema } from "@/lib/validations/watch";
 import { awardAura } from "@/lib/aura";
 import { getPioneerAura } from "@/lib/pioneer";
+import { progressQuests } from "@/lib/quests";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Auto-add or update franchise_watchlist based on entry-level watch progress */
+async function syncFranchiseWatchlist(
+  supabase: SupabaseClient,
+  userId: string,
+  franchiseId: string,
+  newEntryStatus: string,
+  prevEntryStatus: string,
+) {
+  // Check current franchise_watchlist row
+  const { data: existing } = await supabase
+    .from("franchise_watchlist")
+    .select("id, status")
+    .eq("user_id", userId)
+    .eq("franchise_id", franchiseId)
+    .maybeSingle();
+
+  // If user started watching an entry, ensure franchise is on watchlist
+  if (newEntryStatus === "watching" || newEntryStatus === "completed") {
+    if (!existing) {
+      // Auto-add as "watching"
+      await supabase.from("franchise_watchlist").insert({
+        user_id: userId,
+        franchise_id: franchiseId,
+        status: "watching",
+      });
+    } else if (existing.status === "plan_to_watch") {
+      // Upgrade from plan_to_watch to watching
+      await supabase
+        .from("franchise_watchlist")
+        .update({ status: "watching", updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+  }
+
+  // Check if all entries are now completed
+  if (newEntryStatus === "completed" && existing) {
+    const { count: totalEntries } = await supabase
+      .from("entry")
+      .select("id", { count: "exact", head: true })
+      .eq("franchise_id", franchiseId)
+      .eq("is_removed", false);
+
+    const { count: completedEntries } = await supabase
+      .from("watch_entry")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("franchise_id", franchiseId)
+      .eq("status", "completed");
+
+    if (totalEntries && completedEntries && completedEntries >= totalEntries) {
+      await supabase
+        .from("franchise_watchlist")
+        .update({ status: "completed", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("franchise_id", franchiseId);
+    }
+  }
+
+  // If un-completing (was completed, now watching), revert franchise status
+  if (prevEntryStatus === "completed" && newEntryStatus !== "completed" && existing?.status === "completed") {
+    await supabase
+      .from("franchise_watchlist")
+      .update({ status: "watching", updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("franchise_id", franchiseId);
+  }
+}
 
 /** GET /api/user/watch?franchise_id=X — fetch user's progress for a franchise */
 export async function GET(request: Request) {
@@ -163,27 +233,20 @@ export async function POST(request: Request) {
     });
   }
 
-  // Calculate base aura delta
+  // Calculate base aura delta (episodes watched + obscurity bonus on completion)
   const episodesDelta = newWatched - prevWatched;
-  const baseDelta = episodesDelta * 1;
+  let auraDelta = episodesDelta * 1;
 
   let totalAura = 0;
   let era = "initiate";
 
-  // Track whether completion status changed for Pioneer aura
+  // Track whether completion status changed for obscurity bonus
   const prevStatus = existing?.status ?? "watching";
   const becameCompleted = newStatus === "completed" && prevStatus !== "completed";
   const resetFromCompleted = newStatus !== "completed" && prevStatus === "completed";
 
-  // Award/deduct base aura
-  if (baseDelta !== 0) {
-    const result = await awardAura(supabase, user.id, "aura", baseDelta);
-    totalAura = result.totalAura;
-    era = result.era;
-  }
-
-  // Award/deduct pioneer aura on completion status change
-  let pioneerDelta = 0;
+  // Add obscurity bonus to aura delta on completion
+  let obscurityBonus = 0;
   if (becameCompleted || resetFromCompleted) {
     const { data: franchiseData } = await supabase
       .from("franchise")
@@ -191,15 +254,19 @@ export async function POST(request: Request) {
       .eq("id", franchise_id)
       .single();
 
-    const pioneerAmount = getPioneerAura(franchiseData?.obscurity_tier ?? null);
-    pioneerDelta = becameCompleted ? pioneerAmount : -pioneerAmount;
-    const result = await awardAura(supabase, user.id, "pioneer", pioneerDelta);
+    obscurityBonus = getPioneerAura(franchiseData?.obscurity_tier ?? null);
+    auraDelta += becameCompleted ? obscurityBonus : -obscurityBonus;
+  }
+
+  // Award/deduct combined aura (base + obscurity bonus)
+  if (auraDelta !== 0) {
+    const result = await awardAura(supabase, user.id, "aura", auraDelta);
     totalAura = result.totalAura;
     era = result.era;
   }
 
   // If no aura changes, still return current totals
-  if (baseDelta === 0 && pioneerDelta === 0) {
+  if (auraDelta === 0) {
     const { data: userData } = await supabase
       .from("users")
       .select("total_aura, era")
@@ -208,6 +275,9 @@ export async function POST(request: Request) {
     totalAura = userData?.total_aura ?? 0;
     era = userData?.era ?? "initiate";
   }
+
+  // Auto-manage franchise_watchlist based on entry-level progress
+  await syncFranchiseWatchlist(supabase, user.id, franchise_id, newStatus, prevStatus);
 
   // Log activity
   await supabase.from("activity").insert({
@@ -218,10 +288,21 @@ export async function POST(request: Request) {
     metadata: {
       episodes_watched: newWatched,
       total_episodes: totalEpisodes,
-      base_aura: baseDelta,
-      pioneer_aura: pioneerDelta,
+      aura_awarded: auraDelta,
+      obscurity_bonus: obscurityBonus,
     },
   });
+
+  // Progress quests based on watch actions
+  const completedQuests = [];
+  if (episodesDelta > 0) {
+    const cq = await progressQuests(supabase, user.id, "watch_episodes", episodesDelta);
+    completedQuests.push(...cq);
+  }
+  if (becameCompleted) {
+    const cq = await progressQuests(supabase, user.id, "complete_anime", 1);
+    completedQuests.push(...cq);
+  }
 
   return NextResponse.json({
     watchEntry: {
@@ -229,8 +310,9 @@ export async function POST(request: Request) {
       episodes_watched: newWatched,
       status: newStatus,
     },
-    auraAwarded: { base: baseDelta, pioneer: pioneerDelta },
+    auraAwarded: auraDelta,
     totalAura,
     era,
+    completedQuests,
   });
 }

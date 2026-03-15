@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat, Lato } from "next/font/google";
 import Nav from "@/components/layout/Nav";
 import AuthInitializer from "@/components/layout/AuthInitializer";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -37,6 +38,7 @@ export default function RootLayout({
         <AuthInitializer />
         <Nav />
         {children}
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

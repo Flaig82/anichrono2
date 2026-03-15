@@ -113,6 +113,7 @@ export default function MasterOrderSection({
       {/* Main content column */}
       <div className="flex flex-1 flex-col gap-8">
         <FranchiseHero
+          franchiseId={franchiseId}
           title={heroTitle}
           description={heroDescription}
           bannerImageUrl={heroBannerImageUrl}

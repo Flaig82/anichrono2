@@ -1,29 +1,16 @@
-export const AURA_TYPES = [
-  "pioneer",
-  "scholar",
-  "oracle",
-  "sensei",
-  "aura",
-  "archivist",
-] as const;
+export const AURA_TYPES = ["aura", "scholar", "archivist"] as const;
 
 export type AuraType = (typeof AURA_TYPES)[number];
 
 export const AURA_COLORS: Record<AuraType, string> = {
-  pioneer: "#3B82F6",
-  scholar: "#8B5CF6",
-  oracle: "#EC4899",
-  sensei: "#F59E0B",
   aura: "#25EB7E",
+  scholar: "#8B5CF6",
   archivist: "#F97316",
 };
 
 export const AURA_LABELS: Record<AuraType, string> = {
-  pioneer: "Pioneer",
+  aura: "Watch",
   scholar: "Scholar",
-  oracle: "Oracle",
-  sensei: "Sensei",
-  aura: "Aura",
   archivist: "Archivist",
 };
 

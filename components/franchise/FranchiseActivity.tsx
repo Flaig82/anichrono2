@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import Link from "next/link";
 import {
   GitPullRequestArrow,
   Check,
@@ -11,11 +12,13 @@ import {
   Heart,
 } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { getRelativeTime } from "@/lib/utils";
 import type { EntryData } from "@/types/proposal";
 import ProposalSheet from "./ProposalSheet";
 
 interface ActivityProposal {
   id: string;
+  author_id: string;
   title: string;
   description: string | null;
   vote_score: number;
@@ -23,6 +26,7 @@ interface ActivityProposal {
   applied_at: string | null;
   author?: {
     display_name: string;
+    handle: string | null;
     avatar_url: string | null;
   };
 }
@@ -33,18 +37,6 @@ interface ActivityData {
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-function getRelativeTime(dateString: string): string {
-  const diff = Date.now() - new Date(dateString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${Math.floor(days / 7)}w ago`;
-}
 
 function PatternOverlay() {
   return (
@@ -128,10 +120,17 @@ function ActivityCard({
         <span className="flex-1 font-body text-[12px] tracking-[-0.12px] text-white/50">
           {timestamp}
           {proposal.author && (
-            <span className="text-white/30">
+            <>
               {" "}
-              &middot; {proposal.author.display_name}
-            </span>
+              &middot;{" "}
+              <Link
+                href={`/u/${proposal.author.handle ?? proposal.author_id}`}
+                className="text-white/30 hover:text-white/60 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {proposal.author.display_name}
+              </Link>
+            </>
           )}
         </span>
 

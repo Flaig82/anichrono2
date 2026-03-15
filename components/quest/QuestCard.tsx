@@ -7,44 +7,29 @@ import type { AuraType } from "@/types/aura";
 /* ── Aura type gradient backgrounds (matches DailyQuests pattern) ── */
 
 const AURA_GRADIENTS: Record<string, string> = {
-  pioneer:
-    "radial-gradient(ellipse at bottom center, rgba(59,130,246,0.20) 0%, rgba(49,49,49,0) 70%)",
-  scholar:
-    "radial-gradient(ellipse at bottom center, rgba(37,235,126,0.20) 0%, rgba(49,49,49,0) 70%)",
-  oracle:
-    "radial-gradient(ellipse at bottom center, rgba(236,72,153,0.20) 0%, rgba(49,49,49,0) 70%)",
-  sensei:
-    "radial-gradient(ellipse at bottom center, rgba(245,158,11,0.20) 0%, rgba(49,49,49,0) 70%)",
   aura:
-    "radial-gradient(ellipse at bottom center, rgba(16,185,129,0.20) 0%, rgba(49,49,49,0) 70%)",
+    "radial-gradient(ellipse at bottom center, rgba(37,235,126,0.20) 0%, rgba(49,49,49,0) 70%)",
+  scholar:
+    "radial-gradient(ellipse at bottom center, rgba(139,92,246,0.20) 0%, rgba(49,49,49,0) 70%)",
   archivist:
     "radial-gradient(ellipse at bottom center, rgba(249,115,22,0.20) 0%, rgba(49,49,49,0) 70%)",
 };
 
 const AURA_DOT_COLORS: Record<string, string> = {
-  pioneer: "bg-aura-pioneer",
-  scholar: "bg-emerald-400",
-  oracle: "bg-aura-oracle",
-  sensei: "bg-aura-sensei",
-  aura: "bg-aura-veteran",
-  archivist: "bg-aura-archivist",
+  aura: "bg-foundation",
+  scholar: "bg-scholar",
+  archivist: "bg-archivist",
 };
 
 const AURA_BAR_COLORS: Record<string, string> = {
-  pioneer: "bg-aura-pioneer",
-  scholar: "bg-emerald-400",
-  oracle: "bg-aura-oracle",
-  sensei: "bg-aura-sensei",
-  aura: "bg-aura-veteran",
-  archivist: "bg-aura-archivist",
+  aura: "bg-foundation",
+  scholar: "bg-scholar",
+  archivist: "bg-archivist",
 };
 
 const AURA_LABELS: Record<string, string> = {
-  pioneer: "Pioneer",
+  aura: "Watch",
   scholar: "Scholar",
-  oracle: "Oracle",
-  sensei: "Sensei",
-  aura: "Veteran",
   archivist: "Archivist",
 };
 
