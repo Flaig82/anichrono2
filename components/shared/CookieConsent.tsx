@@ -7,7 +7,7 @@ const CONSENT_KEY = "cookie-consent";
 
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 export default function CookieConsent() {
