@@ -6,6 +6,7 @@ import CookieConsent from "@/components/shared/CookieConsent";
 import AuthInitializer from "@/components/layout/AuthInitializer";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -46,6 +47,7 @@ export default function RootLayout({
           <CookieConsent />
         </TooltipProvider>
         <Toaster position="bottom-right" />
+        <Analytics />
       </body>
     </html>
   );
