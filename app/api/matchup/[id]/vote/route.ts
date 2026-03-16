@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { matchupVoteSchema } from "@/lib/validations/prediction";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const matchupVoteLimiter = createRateLimiter("matchup-vote", {
+  burstLimit: 20,
+  burstWindowMs: 60_000,
+  dailyLimit: 200,
+});
 
 /** POST /api/matchup/[id]/vote — cast or change matchup vote */
 export async function POST(
@@ -17,6 +24,11 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = matchupVoteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body: unknown = await request.json();
@@ -55,20 +67,17 @@ export async function POST(
     .eq("user_id", user.id)
     .single();
 
-  let newVotesA = matchup.votes_a;
-  let newVotesB = matchup.votes_b;
-
   if (existingVote) {
     if (existingVote.vote === vote) {
       // Same vote — return current state
       return NextResponse.json({
-        votes_a: newVotesA,
-        votes_b: newVotesB,
+        votes_a: matchup.votes_a,
+        votes_b: matchup.votes_b,
         userVote: vote,
       });
     }
 
-    // Changing vote: update row, adjust counts
+    // Changing vote: update row
     const { error: updateErr } = await supabase
       .from("matchup_vote")
       .update({ vote })
@@ -76,15 +85,6 @@ export async function POST(
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
-    }
-
-    // Swing counts: remove from old side, add to new
-    if (vote === "a") {
-      newVotesA += 1;
-      newVotesB -= 1;
-    } else {
-      newVotesB += 1;
-      newVotesA -= 1;
     }
   } else {
     // New vote
@@ -95,15 +95,25 @@ export async function POST(
     if (insertErr) {
       return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
-
-    if (vote === "a") {
-      newVotesA += 1;
-    } else {
-      newVotesB += 1;
-    }
   }
 
-  // Update vote counts on matchup (service role bypasses RLS)
+  // Count actual votes from matchup_vote rows (avoids race conditions)
+  const { count: countA } = await admin
+    .from("matchup_vote")
+    .select("*", { count: "exact", head: true })
+    .eq("matchup_id", matchupId)
+    .eq("vote", "a");
+
+  const { count: countB } = await admin
+    .from("matchup_vote")
+    .select("*", { count: "exact", head: true })
+    .eq("matchup_id", matchupId)
+    .eq("vote", "b");
+
+  const newVotesA = countA ?? 0;
+  const newVotesB = countB ?? 0;
+
+  // Sync denormalized counts
   await admin
     .from("matchup")
     .update({ votes_a: newVotesA, votes_b: newVotesB })
@@ -132,6 +142,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  const limit = matchupVoteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
+  }
+
   const { data: vote } = await supabase
     .from("matchup_vote")
     .select("id, vote")
@@ -145,26 +160,29 @@ export async function DELETE(
 
   await supabase.from("matchup_vote").delete().eq("id", vote.id);
 
-  // Decrement the appropriate count (service role bypasses RLS)
-  const { data: matchup } = await supabase
+  // Count actual votes from matchup_vote rows
+  const { count: countA } = await admin
+    .from("matchup_vote")
+    .select("*", { count: "exact", head: true })
+    .eq("matchup_id", matchupId)
+    .eq("vote", "a");
+
+  const { count: countB } = await admin
+    .from("matchup_vote")
+    .select("*", { count: "exact", head: true })
+    .eq("matchup_id", matchupId)
+    .eq("vote", "b");
+
+  const newVotesA = countA ?? 0;
+  const newVotesB = countB ?? 0;
+
+  await admin
     .from("matchup")
-    .select("votes_a, votes_b")
-    .eq("id", matchupId)
-    .single();
+    .update({ votes_a: newVotesA, votes_b: newVotesB })
+    .eq("id", matchupId);
 
-  if (matchup) {
-    const updates =
-      vote.vote === "a"
-        ? { votes_a: matchup.votes_a - 1 }
-        : { votes_b: matchup.votes_b - 1 };
-
-    await admin.from("matchup").update(updates).eq("id", matchupId);
-
-    return NextResponse.json({
-      votes_a: vote.vote === "a" ? matchup.votes_a - 1 : matchup.votes_a,
-      votes_b: vote.vote === "b" ? matchup.votes_b - 1 : matchup.votes_b,
-    });
-  }
-
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    votes_a: newVotesA,
+    votes_b: newVotesB,
+  });
 }

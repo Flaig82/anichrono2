@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, Check, ScrollText } from "lucide-react";
+import { ChevronRight, Check, ScrollText, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuests } from "@/hooks/use-quests";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { AURA_DESCRIPTIONS } from "@/types/aura";
+import type { AuraType } from "@/types/aura";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AuraTypeIcon from "@/components/shared/AuraTypeIcon";
 import SectionLabel from "@/components/shared/SectionLabel";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 
 /* ── Aura type gradient backgrounds ── */
 
@@ -18,12 +21,6 @@ const AURA_GRADIENTS: Record<string, string> = {
     "radial-gradient(ellipse at bottom center, rgba(139,92,246,0.20) 0%, rgba(49,49,49,0) 70%)",
   archivist:
     "radial-gradient(ellipse at bottom center, rgba(249,115,22,0.20) 0%, rgba(49,49,49,0) 70%)",
-};
-
-const AURA_DOT_COLORS: Record<string, string> = {
-  aura: "bg-foundation",
-  scholar: "bg-scholar",
-  archivist: "bg-archivist",
 };
 
 /* ── Types (for the internal card, mapped from QuestWithProgress) ── */
@@ -126,18 +123,25 @@ function QuestCard({ quest }: { quest: WeeklyQuest }) {
 
       {/* Reward row */}
       <div className="flex items-center gap-3.5">
-        <span
-          className={`h-4 w-4 shrink-0 rounded-full ${
-            AURA_DOT_COLORS[quest.auraType] ?? "bg-aura-muted"
-          } ${quest.completed ? "opacity-50" : ""}`}
-        />
-        <p
-          className={`flex-1 font-body text-sm font-bold tracking-[-0.28px] text-white ${
-            quest.completed ? "opacity-50" : ""
-          }`}
-        >
-          +{quest.auraAmount} {auraLabel} Aura{quest.completed ? " earned" : ""}
-        </p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex cursor-default items-center gap-3.5 ${quest.completed ? "opacity-50" : ""}`}>
+              <AuraTypeIcon type={quest.auraType as AuraType} size={16} />
+              <p className="font-body text-sm font-bold tracking-[-0.28px] text-white">
+                +{quest.auraAmount} {auraLabel} Aura{quest.completed ? " earned" : ""}
+              </p>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            <p className="flex items-center gap-1.5 font-body text-[12px] font-bold text-white">
+              <AuraTypeIcon type={quest.auraType as AuraType} size={13} />
+              {auraLabel}
+            </p>
+            <p className="mt-1 font-body text-[11px] leading-relaxed text-aura-muted2">
+              {AURA_DESCRIPTIONS[quest.auraType as AuraType]}
+            </p>
+          </TooltipContent>
+        </Tooltip>
         {quest.completed ? (
           <Check size={16} className="text-aura-muted2" />
         ) : (

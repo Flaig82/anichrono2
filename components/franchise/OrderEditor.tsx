@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { EntryData, EditorEntry } from "@/types/proposal";
 import type { EntryType } from "@/types/franchise";
 import type { RelationDropData } from "./EditableEntryList";
@@ -26,6 +27,12 @@ interface OrderEditorProps {
   onCancel: () => void;
   onSubmitSuccess: () => void;
   onAnilistIdsChange?: (ids: Set<number>) => void;
+  /** When provided, toolbar submit calls this instead of opening SubmitProposalDialog */
+  onSubmit?: (entries: EditorEntry[]) => void;
+  submitLabel?: string;
+  cancelLabel?: string;
+  /** In create mode, submit button is always enabled (no diff to compare against) */
+  alwaysEnabled?: boolean;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -43,6 +50,10 @@ export default function OrderEditor({
   onCancel,
   onSubmitSuccess,
   onAnilistIdsChange,
+  onSubmit,
+  submitLabel,
+  cancelLabel,
+  alwaysEnabled,
 }: OrderEditorProps) {
   const [entries, setEntries] = useState<EditorEntry[]>(() =>
     initialEntries.map((e) => ({ ...e })),
@@ -50,6 +61,16 @@ export default function OrderEditor({
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [splitTarget, setSplitTarget] = useState<string | null>(null);
   const [splitPoint, setSplitPoint] = useState("");
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedEntryId((prev) => (prev === id ? null : id));
+  }, []);
+
+  // Group drag-and-drop state
+  const [dragGroupIdx, setDragGroupIdx] = useState<number | null>(null);
+  const [dropGroupIdx, setDropGroupIdx] = useState<number | null>(null);
+  const groupsContainerRef = useRef<HTMLDivElement>(null);
 
   const diffResults = diffEntries(initialEntries, entries);
   const hasChanges = hasDiff(diffResults);
@@ -219,6 +240,87 @@ export default function OrderEditor({
     setEntries((prev) => [...prev, newEntry]);
   }
 
+  // Reorder groups by moving all entries in a group to a new position
+  const handleGroupReorder = useCallback(
+    (fromIdx: number, toIdx: number) => {
+      if (fromIdx === toIdx) return;
+      setEntries((prev) => {
+        // Rebuild groups from current entries to get accurate indices
+        const currentGroups: { parentSeries: string; startIndex: number; count: number }[] = [];
+        let currentSeries: string | null = null;
+        for (let i = 0; i < prev.length; i++) {
+          const series = prev[i]!.parent_series ?? "Unknown";
+          if (series !== currentSeries) {
+            currentGroups.push({ parentSeries: series, startIndex: i, count: 1 });
+            currentSeries = series;
+          } else {
+            currentGroups[currentGroups.length - 1]!.count++;
+          }
+        }
+
+        if (fromIdx < 0 || fromIdx >= currentGroups.length || toIdx < 0 || toIdx >= currentGroups.length) {
+          return prev;
+        }
+
+        const sourceGroup = currentGroups[fromIdx]!;
+        const sourceEntries = prev.slice(sourceGroup.startIndex, sourceGroup.startIndex + sourceGroup.count);
+        const withoutSource = [
+          ...prev.slice(0, sourceGroup.startIndex),
+          ...prev.slice(sourceGroup.startIndex + sourceGroup.count),
+        ];
+
+        // Recalculate target insertion point in the array without the source
+        let insertAt = 0;
+        if (toIdx > fromIdx) {
+          // Moving down: insert after target group's entries (adjusted for removed source)
+          const adjustedGroups: { startIndex: number; count: number }[] = [];
+          let cs: string | null = null;
+          for (let i = 0; i < withoutSource.length; i++) {
+            const s = withoutSource[i]!.parent_series ?? "Unknown";
+            if (s !== cs) {
+              adjustedGroups.push({ startIndex: i, count: 1 });
+              cs = s;
+            } else {
+              adjustedGroups[adjustedGroups.length - 1]!.count++;
+            }
+          }
+          // toIdx - 1 because one group was removed before it
+          const targetIdx = toIdx - 1;
+          if (targetIdx >= 0 && targetIdx < adjustedGroups.length) {
+            const tg = adjustedGroups[targetIdx]!;
+            insertAt = tg.startIndex + tg.count;
+          } else {
+            insertAt = withoutSource.length;
+          }
+        } else {
+          // Moving up: insert before target group's entries
+          const adjustedGroups: { startIndex: number; count: number }[] = [];
+          let cs: string | null = null;
+          for (let i = 0; i < withoutSource.length; i++) {
+            const s = withoutSource[i]!.parent_series ?? "Unknown";
+            if (s !== cs) {
+              adjustedGroups.push({ startIndex: i, count: 1 });
+              cs = s;
+            } else {
+              adjustedGroups[adjustedGroups.length - 1]!.count++;
+            }
+          }
+          if (toIdx >= 0 && toIdx < adjustedGroups.length) {
+            insertAt = adjustedGroups[toIdx]!.startIndex;
+          }
+        }
+
+        const result = [
+          ...withoutSource.slice(0, insertAt),
+          ...sourceEntries,
+          ...withoutSource.slice(insertAt),
+        ];
+        return recalcPositions(result);
+      });
+    },
+    [],
+  );
+
   // Split an episode block at a given point
   function handleSplitRequest(id: string) {
     setSplitTarget(id);
@@ -285,9 +387,18 @@ export default function OrderEditor({
       <OrderEditorToolbar
         onAddEntry={handleAddEntry}
         onCancel={onCancel}
-        onSubmit={() => setShowSubmitDialog(true)}
+        onSubmit={() => {
+          if (onSubmit) {
+            onSubmit(entries);
+          } else {
+            setShowSubmitDialog(true);
+          }
+        }}
         hasChanges={hasChanges}
         entryCount={entries.length}
+        submitLabel={submitLabel}
+        cancelLabel={cancelLabel}
+        alwaysEnabled={alwaysEnabled}
       />
 
       {/* Split dialog (inline) */}
@@ -326,18 +437,70 @@ export default function OrderEditor({
 
       {hasGroups ? (
         /* Grouped layout with cover art headers */
-        <div className="flex flex-col gap-6">
-          {groups.map((group) => (
-            <div key={`${group.parentSeries}-${group.startIndex}`} className="flex flex-col gap-2">
-              {/* Group header — editable parent_series name */}
-              <div className="flex items-center gap-4 rounded-lg border border-aura-border bg-aura-bg3/50 px-4 py-3">
+        <div ref={groupsContainerRef} className="flex flex-col gap-6">
+          {groups.map((group, groupIdx) => (
+            <div
+              key={`${group.parentSeries}-${group.startIndex}`}
+              className={cn(
+                "flex flex-col gap-2 transition-opacity",
+                dragGroupIdx !== null && dragGroupIdx === groupIdx && "opacity-40",
+              )}
+              data-group-idx={groupIdx}
+            >
+              {/* Drop indicator above this group */}
+              {dropGroupIdx === groupIdx && dragGroupIdx !== null && dragGroupIdx !== groupIdx && (
+                <div className="mx-2 mb-1 h-[3px] rounded-full bg-aura-orange shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+              )}
+
+              {/* Group header — draggable, editable parent_series name */}
+              <div
+                draggable
+                onDragStart={(e) => {
+                  setDragGroupIdx(groupIdx);
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("application/aura-group", String(groupIdx));
+                }}
+                onDragEnd={() => {
+                  if (dragGroupIdx !== null && dropGroupIdx !== null && dragGroupIdx !== dropGroupIdx) {
+                    handleGroupReorder(dragGroupIdx, dropGroupIdx);
+                  }
+                  setDragGroupIdx(null);
+                  setDropGroupIdx(null);
+                }}
+                onDragOver={(e) => {
+                  if (!e.dataTransfer.types.includes("application/aura-group")) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  // Determine which group we're hovering over
+                  const container = groupsContainerRef.current;
+                  if (!container) return;
+                  const groupEls = container.querySelectorAll<HTMLElement>("[data-group-idx]");
+                  for (let i = 0; i < groupEls.length; i++) {
+                    const rect = groupEls[i]!.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    if (e.clientY < midY) {
+                      setDropGroupIdx(i);
+                      return;
+                    }
+                  }
+                  setDropGroupIdx(groups.length - 1);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                }}
+                className={cn(
+                  "flex cursor-grab items-center gap-3 rounded-lg border border-aura-border bg-aura-bg3/50 px-3 py-3 active:cursor-grabbing",
+                  dragGroupIdx !== null && dragGroupIdx !== groupIdx && "border-transparent",
+                )}
+              >
+                <GripVertical size={16} className="shrink-0 text-aura-muted" />
                 <div className="relative h-[48px] w-[34px] shrink-0 overflow-hidden rounded bg-aura-bg3">
                   {group.coverImageUrl ? (
                     <Image
                       src={group.coverImageUrl}
                       alt={group.parentSeries}
                       fill
-                      className="object-cover"
+                      className="pointer-events-none object-cover"
                       sizes="34px"
                     />
                   ) : (
@@ -363,8 +526,11 @@ export default function OrderEditor({
                         }),
                       );
                     }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                     placeholder="Series name..."
                     className="bg-transparent font-body text-[13px] font-bold text-white outline-none placeholder:text-aura-muted"
+                    draggable={false}
                   />
                   <p className="font-body text-[10px] text-aura-muted2">
                     {TYPE_LABELS[group.entries[0]?.entry_type ?? "episodes"] ?? "TV Series"} · {group.entries.length} {group.entries.length === 1 ? "entry" : "entries"}
@@ -392,9 +558,16 @@ export default function OrderEditor({
                 onInsertBlankAt={(localIndex) => {
                   handleInsertBlankAt(group.startIndex + localIndex);
                 }}
+                expandedEntryId={expandedEntryId}
+                onToggleExpand={handleToggleExpand}
               />
             </div>
           ))}
+
+          {/* Drop indicator after last group */}
+          {dropGroupIdx !== null && dragGroupIdx !== null && dropGroupIdx >= groups.length - 1 && dragGroupIdx !== groups.length - 1 && dropGroupIdx !== dragGroupIdx && (
+            <div className="mx-2 h-[3px] rounded-full bg-aura-orange shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+          )}
 
           {/* Add new group */}
           <button
@@ -415,6 +588,8 @@ export default function OrderEditor({
           onSplit={handleSplitRequest}
           onInsertAt={handleInsertAt}
           onInsertBlankAt={handleInsertBlankAt}
+          expandedEntryId={expandedEntryId}
+          onToggleExpand={handleToggleExpand}
         />
       )}
 

@@ -1,34 +1,12 @@
 "use client";
 
-import { AURA_COLORS, AURA_LABELS, AURA_TYPES, type AuraType } from "@/types/aura";
+import { AURA_COLORS, AURA_DESCRIPTIONS, AURA_LABELS, AURA_TYPES, type AuraType } from "@/types/aura";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AuraTypeIcon from "@/components/shared/AuraTypeIcon";
 
 interface AuraRow {
   aura_type: AuraType;
   value: number;
-}
-
-function AuraDiamond({ color }: { color: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      className="shrink-0"
-    >
-      <rect
-        x="8"
-        y="1.5"
-        width="9.19"
-        height="9.19"
-        rx="1.5"
-        transform="rotate(45 8 1.5)"
-        stroke={color}
-        strokeWidth="1.5"
-        fill={`${color}18`}
-      />
-    </svg>
-  );
 }
 
 interface ProfileAuraBreakdownProps {
@@ -61,12 +39,25 @@ export default function ProfileAuraBreakdown({
           <div key={row.aura_type} className="flex items-center justify-between">
             <div className="flex w-full flex-col gap-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <AuraDiamond color={AURA_COLORS[row.aura_type]} />
-                  <span className="font-body text-[13px] tracking-[-0.13px] text-white">
-                    {AURA_LABELS[row.aura_type]}
-                  </span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex cursor-default items-center gap-2.5">
+                      <AuraTypeIcon type={row.aura_type} size={16} />
+                      <span className="font-body text-[13px] tracking-[-0.13px] text-white underline decoration-white/20 decoration-dotted underline-offset-4">
+                        {AURA_LABELS[row.aura_type]}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[240px]">
+                    <p className="flex items-center gap-1.5 font-body text-[12px] font-bold text-white">
+                      <AuraTypeIcon type={row.aura_type} size={13} />
+                      {AURA_LABELS[row.aura_type]}
+                    </p>
+                    <p className="mt-1 font-body text-[11px] leading-relaxed text-aura-muted2">
+                      {AURA_DESCRIPTIONS[row.aura_type]}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
                 <span className="font-body text-lg font-semibold tracking-[-0.18px] text-white">
                   {row.value.toLocaleString()}
                 </span>

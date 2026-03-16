@@ -3,6 +3,9 @@
 import { Check, ChevronRight, Lock, HelpCircle } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import type { AuraType } from "@/types/aura";
+import { AURA_DESCRIPTIONS } from "@/types/aura";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AuraTypeIcon from "@/components/shared/AuraTypeIcon";
 
 /* ── Aura type gradient backgrounds (matches DailyQuests pattern) ── */
 
@@ -13,12 +16,6 @@ const AURA_GRADIENTS: Record<string, string> = {
     "radial-gradient(ellipse at bottom center, rgba(139,92,246,0.20) 0%, rgba(49,49,49,0) 70%)",
   archivist:
     "radial-gradient(ellipse at bottom center, rgba(249,115,22,0.20) 0%, rgba(49,49,49,0) 70%)",
-};
-
-const AURA_DOT_COLORS: Record<string, string> = {
-  aura: "bg-foundation",
-  scholar: "bg-scholar",
-  archivist: "bg-archivist",
 };
 
 const AURA_BAR_COLORS: Record<string, string> = {
@@ -175,16 +172,25 @@ export default function QuestCard({
         }`}
       >
         {/* Aura dot + reward */}
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`h-3.5 w-3.5 shrink-0 rounded-full ${
-              AURA_DOT_COLORS[auraType] ?? "bg-aura-muted"
-            }`}
-          />
-          <p className="font-body text-sm font-bold tracking-[-0.28px] text-white">
-            +{auraAmount} {auraLabel}
-          </p>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex cursor-default items-center gap-2.5">
+              <AuraTypeIcon type={auraType} size={14} />
+              <p className="font-body text-sm font-bold tracking-[-0.28px] text-white">
+                +{auraAmount} {auraLabel}
+              </p>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            <p className="flex items-center gap-1.5 font-body text-[12px] font-bold text-white">
+              <AuraTypeIcon type={auraType} size={13} />
+              {auraLabel}
+            </p>
+            <p className="mt-1 font-body text-[11px] leading-relaxed text-aura-muted2">
+              {AURA_DESCRIPTIONS[auraType]}
+            </p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Status indicator */}
         {completed ? (

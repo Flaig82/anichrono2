@@ -44,6 +44,19 @@ async function getRecentlyUpdatedFranchises() {
 
   const franchiseIds = franchises.map((f) => f.id);
 
+  // Fetch the Pyrat user as fallback creator for imported franchises
+  const { data: pyratUser } = await supabase
+    .from("users")
+    .select("display_name, handle, avatar_url")
+    .eq("handle", "pyrat")
+    .single();
+
+  const pyrat = {
+    name: pyratUser?.display_name ?? "Pyrat",
+    handle: pyratUser?.handle ?? null,
+    avatar: pyratUser?.avatar_url ?? null,
+  };
+
   // Fetch entry counts for these franchises
   const { data: entries } = await supabase
     .from("entry")
@@ -86,7 +99,6 @@ async function getRecentlyUpdatedFranchises() {
 
   return franchises.map((f) => {
     const editor = lastEditorMap.get(f.id);
-    const wasEdited = f.updated_at !== f.created_at && editor;
 
     return {
       slug: f.slug,
@@ -99,10 +111,10 @@ async function getRecentlyUpdatedFranchises() {
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
-      updatedByUser: wasEdited ? editor.name : "Pyrat",
-      updatedByHandle: wasEdited ? (editor.handle ?? editor.id) : null,
-      updatedByAvatar: (wasEdited ? editor.avatar : undefined) ?? undefined,
-      wasEdited: !!wasEdited,
+      updatedByUser: editor ? editor.name : pyrat.name,
+      updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
+      updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
+      wasEdited: !!editor,
     };
   });
 }

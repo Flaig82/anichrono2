@@ -1,6 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { updateProfileSchema } from "@/lib/validations/profile";
+import { createRateLimiter } from "@/lib/rate-limit";
+
+const profileLimiter = createRateLimiter("profile-update", {
+  burstLimit: 10,
+  burstWindowMs: 60_000,
+  dailyLimit: 50,
+});
 
 /** PATCH /api/user/profile — update own profile */
 export async function PATCH(request: Request) {
@@ -11,6 +18,11 @@ export async function PATCH(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = profileLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body = await request.json();

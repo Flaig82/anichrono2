@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PosterCardProps {
   src: string;
@@ -14,6 +15,7 @@ interface PosterCardProps {
 }
 
 function PosterCard({ src, alt, score, href, anilistId }: PosterCardProps) {
+  const { user } = useAuth();
   const { containerRef, canvasRef } = useDitherHover();
 
   const hasChroniclе = !!href;
@@ -62,8 +64,8 @@ function PosterCard({ src, alt, score, href, anilistId }: PosterCardProps) {
     return <Link href={href}>{card}</Link>;
   }
 
-  // Unclaimed — link to create flow with AniList ID
-  if (anilistId) {
+  // Unclaimed — link to create flow only if logged in
+  if (anilistId && user) {
     return <Link href={`/franchise/create?anilist=${anilistId}`}>{card}</Link>;
   }
 
@@ -81,7 +83,7 @@ export interface PosterItem {
 export default function PosterRow({ posters }: { posters: PosterItem[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 md:gap-4">
-      {posters.slice(0, 6).map((poster, i) => (
+      {posters.map((poster, i) => (
         <PosterCard key={i} {...poster} />
       ))}
     </div>

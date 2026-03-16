@@ -1,6 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { watchlistActionSchema } from "@/lib/validations/watchlist";
+import { createRateLimiter } from "@/lib/rate-limit";
+
+const watchlistLimiter = createRateLimiter("watchlist", {
+  burstLimit: 30,
+  burstWindowMs: 60_000,
+  dailyLimit: 500,
+});
 
 /** POST /api/user/watchlist — add, update, or remove franchise from watchlist */
 export async function POST(request: Request) {
@@ -11,6 +18,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = watchlistLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body = await request.json();

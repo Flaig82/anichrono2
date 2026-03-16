@@ -14,6 +14,12 @@ export const AURA_LABELS: Record<AuraType, string> = {
   archivist: "Archivist",
 };
 
+export const AURA_DESCRIPTIONS: Record<AuraType, string> = {
+  aura: "Earned by watching obscure and underwatched anime. Rarer shows = more Aura.",
+  scholar: "Earned by writing reviews and getting upvotes from the community.",
+  archivist: "Earned by submitting and maintaining franchise watch orders.",
+};
+
 export const ERA_LIST = [
   "initiate",
   "wanderer",

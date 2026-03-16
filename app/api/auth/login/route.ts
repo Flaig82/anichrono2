@@ -1,8 +1,20 @@
 import { createClient } from "@/lib/supabase-server";
 import { loginSchema } from "@/lib/validations/auth";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
+const loginLimiter = createRateLimiter("login", {
+  burstLimit: 5,
+  burstWindowMs: 60_000,
+  dailyLimit: 20,
+});
+
 export async function POST(request: Request) {
+  const limit = loginLimiter.check(getClientIp(request));
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
+  }
+
   const body: unknown = await request.json();
   const result = loginSchema.safeParse(body);
 

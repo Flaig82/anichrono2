@@ -17,6 +17,7 @@ interface FranchiseItem {
   entryTypes: string[];
   updatedAt: string;
   updatedByUser: string;
+  updatedByHandle: string | null;
   updatedByAvatar: string | undefined;
   wasEdited: boolean;
 }
@@ -33,6 +34,19 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
 
   const franchiseIds = franchises.map((f) => f.id);
 
+  // Fetch the Pyrat user as fallback creator for imported franchises
+  const { data: pyratUser } = await supabase
+    .from("users")
+    .select("display_name, handle, avatar_url")
+    .eq("handle", "pyrat")
+    .single();
+
+  const pyrat = {
+    name: pyratUser?.display_name ?? "Pyrat",
+    handle: pyratUser?.handle ?? null,
+    avatar: pyratUser?.avatar_url ?? null,
+  };
+
   const [{ data: entries }, { data: proposals }] = await Promise.all([
     supabase
       .from("entry")
@@ -41,7 +55,7 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       .eq("is_removed", false),
     supabase
       .from("order_proposal")
-      .select("franchise_id, author_id, created_at, users:author_id(display_name, avatar_url)")
+      .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
       .in("franchise_id", franchiseIds)
       .order("created_at", { ascending: false }),
   ]);
@@ -57,13 +71,15 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
     }
   }
 
-  const lastEditorMap = new Map<string, { name: string; avatar: string | null }>();
+  const lastEditorMap = new Map<string, { name: string; handle: string | null; id: string; avatar: string | null }>();
   for (const p of proposals ?? []) {
     if (!lastEditorMap.has(p.franchise_id)) {
-      const user = p.users as unknown as { display_name: string; avatar_url: string | null } | null;
+      const user = p.users as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
       if (user) {
         lastEditorMap.set(p.franchise_id, {
           name: user.display_name,
+          handle: user.handle,
+          id: p.author_id,
           avatar: user.avatar_url,
         });
       }
@@ -72,7 +88,6 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
 
   return franchises.map((f) => {
     const editor = lastEditorMap.get(f.id);
-    const wasEdited = f.updated_at !== f.created_at && editor;
 
     return {
       slug: f.slug,
@@ -85,9 +100,10 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
-      updatedByUser: wasEdited ? editor.name : "Pyrat",
-      updatedByAvatar: (wasEdited ? editor.avatar : undefined) ?? undefined,
-      wasEdited: !!wasEdited,
+      updatedByUser: editor ? editor.name : pyrat.name,
+      updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
+      updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
+      wasEdited: !!editor,
     };
   });
 }

@@ -3,10 +3,24 @@ import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
 import PosterRow from "@/components/shared/PosterRow";
 import DiscoverHero from "@/components/layout/DiscoverHero";
+import DiscoverLoadMore from "@/components/layout/DiscoverLoadMore";
 import { createClient } from "@/lib/supabase-server";
-import { fetchDiscoverAnime } from "@/lib/anilist";
+import { fetchDiscoverAnime, fetchSeasonalTrending } from "@/lib/anilist";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
+
+type Season = "WINTER" | "SPRING" | "SUMMER" | "FALL";
+
+function getCurrentSeason(): { season: Season; year: number; label: string } {
+  const month = new Date().getMonth() + 1;
+  let season: Season;
+  let label: string;
+  if (month <= 3) { season = "WINTER"; label = "Winter"; }
+  else if (month <= 6) { season = "SPRING"; label = "Spring"; }
+  else if (month <= 9) { season = "SUMMER"; label = "Summer"; }
+  else { season = "FALL"; label = "Fall"; }
+  return { season, year: new Date().getFullYear(), label };
+}
 
 async function getClaimedAnilistIds(): Promise<Set<number>> {
   const supabase = createClient();
@@ -25,7 +39,7 @@ async function getClaimedAnilistIds(): Promise<Set<number>> {
 function toPosters(anime: AniListDiscoverMedia[], claimedIds: Set<number>): PosterItem[] {
   return anime
     .filter((a) => !claimedIds.has(a.id))
-    .slice(0, 6)
+    .slice(0, 12)
     .map((a) => ({
       src: a.coverImageUrl ?? "/images/poster-1.svg",
       alt: a.titleEnglish ?? a.titleRomaji,
@@ -59,9 +73,19 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
   };
 
   if (hasFilters) {
-    // Filtered mode — single results section
+    // Filtered mode — single results section with load more
     const results = await fetchDiscoverAnime(baseFilters);
     const posters = toPosters(results, claimedIds);
+    const hasMore = results.length >= 18;
+
+    // Build string params for client-side load more
+    const loadMoreParams: Record<string, string> = {};
+    if (params.sort) loadMoreParams.sort = params.sort as string;
+    if (params.q) loadMoreParams.q = params.q as string;
+    if (params.genre) loadMoreParams.genre = (Array.isArray(params.genre) ? params.genre[0] : params.genre) as string;
+    if (params.format) loadMoreParams.format = params.format as string;
+    if (params.season) loadMoreParams.season = params.season as string;
+    if (params.year) loadMoreParams.year = params.year as string;
 
     return (
       <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
@@ -73,7 +97,13 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
               {posters.length} result{posters.length !== 1 ? "s" : ""}
             </SectionLabel>
             {posters.length > 0 ? (
-              <PosterRow posters={posters} />
+              <>
+                <PosterRow posters={posters} />
+                <DiscoverLoadMore
+                  searchParams={loadMoreParams}
+                  initialHasMore={hasMore}
+                />
+              </>
             ) : (
               <p className="font-body text-sm text-aura-muted2">
                 No unclaimed anime match your filters. Try broadening your search.
@@ -91,23 +121,49 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
     );
   }
 
-  // Default mode — curated sections by obscurity tier
-  const [popularAnime, nicheAnime, hiddenAnime] = await Promise.all([
+  // Default mode — curated sections by obscurity tier + trending
+  const { season, year, label } = getCurrentSeason();
+
+  const [trendingAnime, popularAnime, nicheAnime, hiddenAnime] = await Promise.all([
+    fetchSeasonalTrending(season, year),
     fetchDiscoverAnime({ sort: "POPULARITY_DESC", popularityGreater: 50000 }),
     fetchDiscoverAnime({ sort: "SCORE_DESC", popularityGreater: 10000, popularityLesser: 50000 }),
     fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 }),
   ]);
 
+  // Convert trending to poster items, filtering out claimed
+  const trendingPosters: PosterItem[] = trendingAnime
+    .filter((a) => !claimedIds.has(a.id))
+    .slice(0, 12)
+    .map((a) => ({
+      src: a.coverImageUrl ?? "/images/poster-1.svg",
+      alt: a.titleEnglish ?? a.titleRomaji,
+      score: a.averageScore,
+      anilistId: a.id,
+    }));
+
   const popularPosters = toPosters(popularAnime, claimedIds);
   const nichePosters = toPosters(nicheAnime, claimedIds);
   const hiddenPosters = toPosters(hiddenAnime, claimedIds);
 
-  const totalUnclaimed = popularPosters.length + nichePosters.length + hiddenPosters.length;
+  const totalUnclaimed = trendingPosters.length + popularPosters.length + nichePosters.length + hiddenPosters.length;
 
   return (
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
       <div className="flex flex-1 flex-col gap-10">
         <DiscoverHero unclaimedCount={totalUnclaimed} />
+
+        {trendingPosters.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <SectionLabel>Trending {label} {year} — No Chronicle</SectionLabel>
+              <p className="font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
+                Currently airing shows the community hasn&apos;t chronicled yet.
+              </p>
+            </div>
+            <PosterRow posters={trendingPosters} />
+          </section>
+        )}
 
         {popularPosters.length > 0 && (
           <section className="flex flex-col gap-5">

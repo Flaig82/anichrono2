@@ -18,5 +18,51 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data ?? []);
+  const items = data ?? [];
+  if (items.length === 0) {
+    return NextResponse.json([]);
+  }
+
+  // Get current user (may be null for logged-out visitors)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const itemIds = items.map((item) => item.id);
+
+  // Batch-fetch like counts
+  const { data: likeCounts } = await supabase
+    .from("activity_like")
+    .select("item_id")
+    .eq("item_type", "activity")
+    .in("item_id", itemIds);
+
+  const countMap = new Map<string, number>();
+  for (const row of likeCounts ?? []) {
+    countMap.set(row.item_id, (countMap.get(row.item_id) ?? 0) + 1);
+  }
+
+  // Batch-fetch current user's likes
+  const userLikedSet = new Set<string>();
+  if (user) {
+    const { data: userLikes } = await supabase
+      .from("activity_like")
+      .select("item_id")
+      .eq("item_type", "activity")
+      .eq("user_id", user.id)
+      .in("item_id", itemIds);
+
+    for (const row of userLikes ?? []) {
+      userLikedSet.add(row.item_id);
+    }
+  }
+
+  // Attach like data to each item
+  const enriched = items.map((item) => ({
+    ...item,
+    like_count: countMap.get(item.id) ?? 0,
+    user_liked: userLikedSet.has(item.id),
+  }));
+
+  return NextResponse.json(enriched);
 }

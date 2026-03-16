@@ -1,10 +1,17 @@
 import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const BUCKET = "avatars";
+
+const avatarLimiter = createRateLimiter("avatar-upload", {
+  burstLimit: 5,
+  burstWindowMs: 60_000,
+  dailyLimit: 20,
+});
 
 /** Ensure the avatars bucket exists (idempotent) */
 async function ensureBucket(serviceClient: ReturnType<typeof createServiceClient>) {
@@ -28,6 +35,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = avatarLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const formData = await request.formData();

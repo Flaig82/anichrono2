@@ -328,6 +328,21 @@ const QUESTS: QuestSeed[] = [
     sort_order: 4,
     season: null,
   },
+  {
+    category: "mastery",
+    title: "Heart of the Community",
+    flavour_text: "500 hearts in a single day. Your devotion echoes across the feed.",
+    description:
+      "Hit the 500 daily like limit. Unlocks the Heart of the Community title.",
+    aura_type: "aura",
+    aura_amount: 750,
+    target: 1,
+    condition: { type: "daily_likes", count: 500 },
+    era_required: null,
+    is_hidden: true,
+    sort_order: 5,
+    season: null,
+  },
 ];
 
 async function seed() {

@@ -4,7 +4,14 @@ import { updateWatchSchema } from "@/lib/validations/watch";
 import { awardAura } from "@/lib/aura";
 import { getPioneerAura } from "@/lib/pioneer";
 import { progressQuests } from "@/lib/quests";
+import { createRateLimiter } from "@/lib/rate-limit";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+const watchLimiter = createRateLimiter("watch", {
+  burstLimit: 60,
+  burstWindowMs: 60_000,
+  dailyLimit: 1000,
+});
 
 /** Auto-add or update franchise_watchlist based on entry-level watch progress */
 async function syncFranchiseWatchlist(
@@ -126,6 +133,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = watchLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body = await request.json();

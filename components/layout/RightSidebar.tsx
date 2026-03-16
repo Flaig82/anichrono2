@@ -15,13 +15,6 @@ export default function RightSidebar({ children }: RightSidebarProps) {
 
       {/* ── Page-specific content ── */}
       {children}
-
-      {/* ── Ad banner placeholder ── */}
-      <div className="flex h-[600px] w-[300px] items-center justify-center rounded-lg border border-dashed border-white/[0.1] bg-aura-bg3/50">
-        <span className="font-body text-[11px] text-aura-muted">
-          Ad Space — 300×600
-        </span>
-      </div>
     </aside>
   );
 }

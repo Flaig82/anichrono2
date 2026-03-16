@@ -1,7 +1,14 @@
 import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { awardVoteSchema } from "@/lib/validations/prediction";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const awardVoteLimiter = createRateLimiter("award-vote", {
+  burstLimit: 20,
+  burstWindowMs: 60_000,
+  dailyLimit: 200,
+});
 
 /** POST /api/award/[id]/vote — cast or change award vote */
 export async function POST(
@@ -17,6 +24,11 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = awardVoteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body: unknown = await request.json();
@@ -158,6 +170,11 @@ export async function DELETE(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = awardVoteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const { data: vote } = await supabase

@@ -51,6 +51,8 @@ interface RelationsSidebarProps {
   franchiseId: string;
   savedAnilistIds: Set<number>;
   unsavedAnilistIds: Set<number>;
+  /** Pre-loaded relations (skip SWR fetch when provided) */
+  initialRelations?: AniListRelation[];
 }
 
 function useDebounce(value: string, delay: number) {
@@ -66,6 +68,7 @@ export default function RelationsSidebar({
   franchiseId,
   savedAnilistIds,
   unsavedAnilistIds,
+  initialRelations,
 }: RelationsSidebarProps) {
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,10 +77,13 @@ export default function RelationsSidebar({
 
   const isSearching = debouncedQuery.length >= 2;
 
-  // Relations fetch
+  // Relations fetch (skip when pre-loaded)
   const { data: relationsData, isLoading: relationsLoading } = useSWR<{
     relations: AniListRelation[];
-  }>(`/api/franchise/${franchiseId}/relations`, fetcher);
+  }>(
+    initialRelations ? null : `/api/franchise/${franchiseId}/relations`,
+    fetcher,
+  );
 
   // Search fetch
   const { data: searchData, isLoading: searchLoading } = useSWR<{
@@ -87,7 +93,7 @@ export default function RelationsSidebar({
     fetcher,
   );
 
-  const relations = relationsData?.relations ?? [];
+  const relations = initialRelations ?? relationsData?.relations ?? [];
   const searchResults = searchData?.results ?? [];
 
   const filtered =

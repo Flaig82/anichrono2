@@ -1,6 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
 import { createProposalSchema } from "@/lib/validations/proposal";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const proposalCreateLimiter = createRateLimiter("proposal-create", {
+  burstLimit: 3,
+  burstWindowMs: 60_000,
+  dailyLimit: 10,
+});
 
 /** GET /api/franchise/[id]/proposals — list open proposals for a franchise */
 export async function GET(
@@ -65,6 +72,11 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = proposalCreateLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   // Era check — must be Wanderer+ (500+ Aura)

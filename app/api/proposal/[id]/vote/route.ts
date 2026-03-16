@@ -2,9 +2,16 @@ import { createClient } from "@/lib/supabase-server";
 import { voteSchema } from "@/lib/validations/proposal";
 import { NextResponse } from "next/server";
 import { progressQuests, type CompletedQuest } from "@/lib/quests";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 const APPLY_THRESHOLD = 10;
 const REJECT_THRESHOLD = -5;
+
+const voteLimiter = createRateLimiter("proposal-vote", {
+  burstLimit: 20,
+  burstWindowMs: 60_000,
+  dailyLimit: 200,
+});
 
 /** POST /api/proposal/[id]/vote — upsert a vote on a proposal */
 export async function POST(
@@ -20,6 +27,11 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = voteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   // Validate body
@@ -154,6 +166,11 @@ export async function DELETE(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = voteLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   // Find existing vote

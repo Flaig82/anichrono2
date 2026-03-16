@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase-server";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
+
+const withdrawLimiter = createRateLimiter("proposal-withdraw", {
+  burstLimit: 10,
+  burstWindowMs: 60_000,
+  dailyLimit: 50,
+});
 
 /** POST /api/proposal/[id]/withdraw — author withdraws their own proposal */
 export async function POST(
@@ -14,6 +21,11 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = withdrawLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const { data: proposal } = await supabase

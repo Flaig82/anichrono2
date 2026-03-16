@@ -7,10 +7,13 @@ import { BookOpen, Compass, Eye, Swords, LogOut, Shield, Settings } from "lucide
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
-const navLinks = [
+const publicNavLinks = [
   { href: "/chronicles", label: "Chronicles", icon: BookOpen },
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/predictions", label: "Predictions", icon: Eye },
+] as const;
+
+const authNavLinks = [
   { href: "/quests", label: "Quest", icon: Swords },
 ] as const;
 
@@ -37,7 +40,25 @@ export default function Nav() {
         </Link>
 
         {/* Nav pills */}
-        {navLinks.map(({ href, label, icon: Icon }) => {
+        {publicNavLinks.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors md:px-5",
+                isActive
+                  ? "bg-aura-orange"
+                  : "bg-[rgba(49,49,49,0.6)] hover:bg-[rgba(49,49,49,0.8)]"
+              )}
+            >
+              <Icon size={16} />
+              <span className="hidden md:inline">{label}</span>
+            </Link>
+          );
+        })}
+        {user && authNavLinks.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <Link
@@ -59,7 +80,7 @@ export default function Nav() {
         {/* Admin link — only visible to admins */}
         {profile?.is_admin && (
           <Link
-            href="/admin/proposals"
+            href="/admin"
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors md:px-5",
               pathname.startsWith("/admin")

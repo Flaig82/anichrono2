@@ -17,6 +17,8 @@ export interface LiveActivityItem {
   entry: {
     title: string;
   } | null;
+  like_count: number;
+  user_liked: boolean;
 }
 
 /** Normalized item for the Updates section (proposals + new franchises) */
@@ -27,4 +29,6 @@ export interface ContentUpdateItem {
   description: string;
   poster: string | null;
   created_at: string;
+  like_count: number;
+  user_liked: boolean;
 }

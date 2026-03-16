@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import ProposalDiffView from "@/components/franchise/ProposalDiffView";
@@ -16,9 +15,17 @@ interface AdminProposal extends OrderProposal {
   };
 }
 
+function PatternOverlay() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 rounded-xl opacity-10"
+      style={{ backgroundImage: "url(/images/pattern.png)", backgroundRepeat: "repeat" }}
+    />
+  );
+}
+
 export default function AdminProposalsPage() {
-  const { profile, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const { profile } = useAuth();
   const [proposals, setProposals] = useState<AdminProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -27,26 +34,7 @@ export default function AdminProposalsPage() {
   >({});
   const [actionInFlight, setActionInFlight] = useState<string | null>(null);
 
-  // Redirect non-admins (wait for profile to load before deciding)
-  useEffect(() => {
-    if (authLoading) return;
-    // No user at all → redirect
-    if (!profile) {
-      // Give profile a moment to load (it fetches after auth resolves)
-      const timeout = setTimeout(() => {
-        const current = useAuth.getState().profile;
-        if (!current?.is_admin) {
-          router.replace("/");
-        }
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-    if (!profile.is_admin) {
-      router.replace("/");
-    }
-  }, [authLoading, profile, router]);
-
-  // Fetch pending proposals
+  // Fetch pending proposals (admin guard handled by layout)
   useEffect(() => {
     if (!profile?.is_admin) return;
 
@@ -102,24 +90,31 @@ export default function AdminProposalsPage() {
     setActionInFlight(null);
   }
 
-  if (authLoading || !profile?.is_admin) {
-    return null;
-  }
-
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="font-brand text-2xl font-bold text-white mb-1">
-        Proposal Approval Queue
-      </h1>
-      <p className="font-body text-sm text-aura-muted2 mb-8">
-        Proposals that reached the vote threshold and need admin review.
-      </p>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div>
+        <h1
+          className="font-brand text-xl font-bold tracking-tight text-white"
+          style={{ textShadow: "0 0 12px rgba(235, 99, 37, 0.5)" }}
+        >
+          Proposal Approval Queue
+        </h1>
+        <p className="mt-1 font-body text-[13px] tracking-[-0.26px] text-aura-muted2">
+          Proposals that reached the vote threshold and need admin review.
+        </p>
+      </div>
 
       {isLoading ? (
-        <div className="text-aura-muted2 font-body text-sm">Loading...</div>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-[80px] animate-pulse rounded-xl bg-aura-bg3" />
+          ))}
+        </div>
       ) : proposals.length === 0 ? (
-        <div className="rounded-lg border border-aura-border bg-aura-bg2 px-6 py-10 text-center">
-          <p className="font-body text-sm text-aura-muted2">
+        <div className="relative overflow-hidden rounded-xl bg-aura-bg3 px-6 py-12 text-center">
+          <PatternOverlay />
+          <p className="relative font-body text-[13px] text-aura-muted">
             No proposals pending approval.
           </p>
         </div>
@@ -128,33 +123,34 @@ export default function AdminProposalsPage() {
           {proposals.map((proposal) => (
             <div
               key={proposal.id}
-              className="rounded-lg border border-aura-border bg-aura-bg2"
+              className="relative overflow-hidden rounded-xl bg-aura-bg3"
             >
+              <PatternOverlay />
               {/* Header row */}
               <button
                 onClick={() => handleExpand(proposal)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left"
+                className="relative flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-white/[0.02]"
               >
                 <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-body text-sm font-bold text-white truncate">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-body text-[14px] font-bold tracking-[-0.28px] text-white truncate">
                       {proposal.title}
                     </span>
-                    <span className="shrink-0 rounded bg-aura-bg4 px-2 py-0.5 font-mono text-[10px] text-aura-muted2">
+                    <span className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-0.5 font-mono text-[10px] tracking-[0.15em] text-aura-muted2">
                       +{proposal.vote_score} votes
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 font-mono text-[11px] text-aura-muted">
+                  <div className="flex items-center gap-2 font-body text-[11px] text-white/50">
                     <span>{proposal.franchise?.title ?? "Unknown franchise"}</span>
-                    <span>·</span>
+                    <span className="text-aura-muted">·</span>
                     <Link
                       href={`/u/${proposal.author?.handle ?? proposal.author_id}`}
-                      className="hover:text-aura-muted2 transition-colors"
+                      className="transition-colors hover:text-aura-orange"
                       onClick={(e) => e.stopPropagation()}
                     >
                       by {proposal.author?.display_name ?? "Unknown"}
                     </Link>
-                    <span>·</span>
+                    <span className="text-aura-muted">·</span>
                     <span>
                       {new Date(proposal.created_at).toLocaleDateString()}
                     </span>
@@ -167,9 +163,9 @@ export default function AdminProposalsPage() {
 
               {/* Expanded diff + actions */}
               {expandedId === proposal.id && (
-                <div className="border-t border-aura-border px-5 py-4">
+                <div className="relative border-t border-white/[0.06] px-5 py-4">
                   {proposal.description && (
-                    <p className="font-body text-sm text-aura-muted2 mb-4">
+                    <p className="font-body text-[13px] tracking-[-0.26px] text-aura-muted2 mb-4">
                       {proposal.description}
                     </p>
                   )}
@@ -187,7 +183,7 @@ export default function AdminProposalsPage() {
                     <button
                       onClick={() => handleAction(proposal.id, "approve")}
                       disabled={actionInFlight === proposal.id}
-                      className="rounded-lg bg-emerald-600 px-4 py-2 font-body text-sm font-bold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                      className="rounded-lg bg-emerald-500/15 px-4 py-2 font-body text-[13px] font-bold tracking-[-0.26px] text-emerald-400 transition-all hover:bg-emerald-500/25 disabled:opacity-50"
                     >
                       {actionInFlight === proposal.id
                         ? "Applying..."
@@ -196,7 +192,7 @@ export default function AdminProposalsPage() {
                     <button
                       onClick={() => handleAction(proposal.id, "reject")}
                       disabled={actionInFlight === proposal.id}
-                      className="rounded-lg bg-red-600/20 px-4 py-2 font-body text-sm font-bold text-red-400 transition-colors hover:bg-red-600/30 disabled:opacity-50"
+                      className="rounded-lg bg-red-500/10 px-4 py-2 font-body text-[13px] font-bold tracking-[-0.26px] text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-50"
                     >
                       Reject
                     </button>

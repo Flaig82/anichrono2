@@ -9,6 +9,9 @@ interface OrderEditorToolbarProps {
   onSubmit: () => void;
   hasChanges: boolean;
   entryCount: number;
+  submitLabel?: string;
+  cancelLabel?: string;
+  alwaysEnabled?: boolean;
 }
 
 export default function OrderEditorToolbar({
@@ -17,6 +20,9 @@ export default function OrderEditorToolbar({
   onSubmit,
   hasChanges,
   entryCount,
+  submitLabel = "Submit Proposal",
+  cancelLabel = "Cancel",
+  alwaysEnabled = false,
 }: OrderEditorToolbarProps) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-aura-orange/20 bg-aura-orange/5 p-3">
@@ -43,21 +49,21 @@ export default function OrderEditorToolbar({
           className="flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 font-body text-[12px] font-bold text-aura-muted transition-colors hover:bg-white/10 hover:text-white"
         >
           <X size={14} />
-          Cancel
+          {cancelLabel}
         </button>
 
         <button
           onClick={onSubmit}
-          disabled={!hasChanges}
+          disabled={!alwaysEnabled && !hasChanges}
           className={cn(
             "flex items-center gap-1.5 rounded-lg px-4 py-1.5 font-body text-[12px] font-bold transition-colors",
-            hasChanges
+            alwaysEnabled || hasChanges
               ? "bg-aura-orange text-white hover:bg-aura-orange-hover"
               : "cursor-not-allowed bg-white/5 text-aura-muted",
           )}
         >
           <Send size={14} />
-          Submit Proposal
+          {submitLabel}
         </button>
       </div>
     </div>

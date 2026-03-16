@@ -90,18 +90,18 @@ export default function FranchiseCard({
                   {(updatedByUser ?? "?").charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="font-body text-[12px] tracking-[-0.12px] text-white">
+              <span className="font-body text-[12px] tracking-[-0.12px] text-white/50">
                 {wasEdited ? "Updated" : "Created"} by{" "}
                 {updatedByHandle ? (
                   <Link
                     href={`/u/${updatedByHandle}`}
-                    className="hover:text-aura-orange transition-colors"
+                    className="text-white hover:text-aura-orange hover:underline transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {updatedByUser ?? "Unknown"}
                   </Link>
                 ) : (
-                  updatedByUser ?? "Unknown"
+                  <span className="text-white">{updatedByUser ?? "Unknown"}</span>
                 )}
               </span>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { CheckCircle2, Stone } from "lucide-react";
+import { CheckCircle2, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ENTRY_TYPE_COLORS: Record<string, string> = {
@@ -262,7 +262,7 @@ export default function EntryRow({
           auraFlash && "scale-125",
         )}
       >
-        <Stone
+        <Compass
           size={14}
           className={cn(
             "text-aura-foundation transition-all duration-300",

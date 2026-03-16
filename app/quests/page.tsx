@@ -1,13 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
 import QuestsHero from "@/components/layout/QuestsHero";
 import QuestCard from "@/components/quest/QuestCard";
 import { useQuests } from "@/hooks/use-quests";
+import { useAuth } from "@/hooks/use-auth";
 import type { QuestCategory } from "@/types/quest";
 
 /* ── Tab config ── */
@@ -28,16 +29,33 @@ const TAB_DESCRIPTIONS: Record<QuestCategory, string> = {
 /* ── Inner component (uses useSearchParams) ── */
 
 function QuestsContent() {
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get("tab");
   const tab: QuestCategory =
     rawTab && VALID_TABS.includes(rawTab as QuestCategory)
       ? (rawTab as QuestCategory)
       : "journey";
-
   const { quests, isLoading } = useQuests(tab);
   const tabDescription = TAB_DESCRIPTIONS[tab];
   const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) {
+    return (
+      <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
+        <div className="flex flex-1 flex-col gap-10">
+          <div className="h-[200px] animate-pulse rounded-xl bg-aura-bg3" />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">

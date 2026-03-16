@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import {
   GitPullRequestArrow,
   Check,
   Loader2,
-  ChevronUp,
-  Bookmark,
-  Heart,
+  ThumbsUp,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import { getRelativeTime } from "@/lib/utils";
+import AuthModal from "@/components/shared/AuthModal";
 import type { EntryData } from "@/types/proposal";
 import ProposalSheet from "./ProposalSheet";
 
@@ -24,6 +24,8 @@ interface ActivityProposal {
   vote_score: number;
   created_at: string;
   applied_at: string | null;
+  like_count: number;
+  user_liked: boolean;
   author?: {
     display_name: string;
     handle: string | null;
@@ -50,12 +52,50 @@ function PatternOverlay() {
   );
 }
 
+function LikeButton({
+  liked,
+  count,
+  onClick,
+}: {
+  liked: boolean;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex items-center gap-1.5 transition-colors"
+      type="button"
+    >
+      {count > 0 && (
+        <span className={`font-mono text-[11px] ${liked ? "text-aura-orange" : "text-aura-muted2"}`}>
+          {count}
+        </span>
+      )}
+      <div
+        className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
+          liked
+            ? "bg-[#eb6325] shadow-[0_4px_14px_rgba(255,131,74,0.48)]"
+            : "bg-white/[0.08] hover:bg-white/[0.14]"
+        }`}
+      >
+        <ThumbsUp size={12} className={liked ? "text-white" : "text-aura-muted2"} />
+      </div>
+    </button>
+  );
+}
+
 function ActivityCard({
   proposal,
   onClick,
+  onLike,
 }: {
   proposal: ActivityProposal;
   onClick?: () => void;
+  onLike?: () => void;
 }) {
   const { containerRef, canvasRef } = useDitherHover();
 
@@ -101,15 +141,6 @@ function ActivityCard({
           )}
         </div>
 
-        {/* Vote score badge (pending only) */}
-        {!isApplied && (
-          <div className="flex shrink-0 items-center gap-1 rounded-md bg-white/5 px-2 py-1">
-            <ChevronUp size={12} className="text-aura-muted2" />
-            <span className="font-mono text-[11px] font-semibold text-aura-muted2">
-              {proposal.vote_score}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Divider */}
@@ -134,12 +165,13 @@ function ActivityCard({
           )}
         </span>
 
-        <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
-          <Bookmark size={12} className="text-white/50" />
-        </button>
-        <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
-          <Heart size={12} className="text-white/50" />
-        </button>
+        {!onClick && onLike && (
+          <LikeButton
+            liked={proposal.user_liked}
+            count={proposal.like_count}
+            onClick={onLike}
+          />
+        )}
       </div>
     </div>
   );
@@ -159,6 +191,7 @@ export default function FranchiseActivity({
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
     null,
   );
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { data, isLoading, mutate } = useSWR<ActivityData>(
     `/api/franchise/${franchiseId}/activity`,
     fetcher,
@@ -167,6 +200,56 @@ export default function FranchiseActivity({
   const pending = data?.pending ?? [];
   const recent = data?.recent ?? [];
   const hasContent = pending.length > 0 || recent.length > 0;
+
+  const handleLike = useCallback(
+    async (proposalId: string) => {
+      if (!data) return;
+      const proposal = data.recent.find((p) => p.id === proposalId);
+      if (!proposal) return;
+
+      // Optimistic update
+      const optimisticRecent = data.recent.map((p) =>
+        p.id === proposalId
+          ? {
+              ...p,
+              user_liked: !p.user_liked,
+              like_count: p.user_liked ? p.like_count - 1 : p.like_count + 1,
+            }
+          : p,
+      );
+      mutate({ ...data, recent: optimisticRecent }, false);
+
+      try {
+        const res = proposal.user_liked
+          ? await fetch(`/api/activity/${proposalId}/like?item_type=proposal`, { method: "DELETE" })
+          : await fetch(`/api/activity/${proposalId}/like`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ item_type: "proposal" }),
+            });
+
+        if (res.status === 401) {
+          // Revert and show auth modal
+          mutate(data, false);
+          setShowAuthModal(true);
+          return;
+        }
+
+        if (res.status === 429) {
+          const errData = await res.json().catch(() => ({}));
+          toast.error(errData.error ?? "Too many requests. Slow down.");
+          mutate(data, false);
+          return;
+        }
+
+        // Revalidate from server
+        mutate();
+      } catch {
+        mutate(data, false);
+      }
+    },
+    [data, mutate],
+  );
 
   return (
     <div className="flex flex-col gap-2 pt-2">
@@ -221,14 +304,18 @@ export default function FranchiseActivity({
           {/* Recent Updates */}
           {recent.length > 0 && (
             <>
-              <div className="relative overflow-hidden rounded-lg px-5 pb-2 pt-5">
+              <div className="relative mt-4 overflow-hidden rounded-lg px-5 pb-2 pt-5">
                 <PatternOverlay />
                 <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-aura-muted">
                   Recent Updates
                 </span>
               </div>
               {recent.map((p) => (
-                <ActivityCard key={p.id} proposal={p} />
+                <ActivityCard
+                  key={p.id}
+                  proposal={p}
+                  onLike={() => handleLike(p.id)}
+                />
               ))}
             </>
           )}
@@ -243,6 +330,10 @@ export default function FranchiseActivity({
           onClose={() => setSelectedProposalId(null)}
           onWithdraw={() => mutate()}
         />
+      )}
+
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
     </div>
   );

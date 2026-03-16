@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { applyProposal } from "@/lib/apply-proposal";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+const adminActionLimiter = createRateLimiter("admin-actions", {
+  burstLimit: 20,
+  burstWindowMs: 60_000,
+  dailyLimit: 200,
+});
 
 const actionSchema = z.object({
   action: z.enum(["approve", "reject"]),
@@ -33,6 +40,11 @@ export async function POST(
 
   if (!profile?.is_admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const limit = adminActionLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   // Validate body

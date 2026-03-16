@@ -3,8 +3,15 @@ import { NextResponse } from "next/server";
 import { createReviewSchema } from "@/lib/validations/review";
 import { awardAura } from "@/lib/aura";
 import { progressQuests } from "@/lib/quests";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 const SCHOLAR_REVIEW_AURA = 20;
+
+const reviewLimiter = createRateLimiter("review", {
+  burstLimit: 5,
+  burstWindowMs: 60_000,
+  dailyLimit: 20,
+});
 
 /** GET /api/review?franchise_id=X — list reviews for a franchise */
 export async function GET(request: Request) {
@@ -43,6 +50,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = reviewLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body = await request.json();

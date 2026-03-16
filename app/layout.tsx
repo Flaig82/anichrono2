@@ -3,6 +3,7 @@ import { Montserrat, Lato } from "next/font/google";
 import Nav from "@/components/layout/Nav";
 import AuthInitializer from "@/components/layout/AuthInitializer";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -36,8 +37,10 @@ export default function RootLayout({
         className={`${montserrat.variable} ${lato.variable} font-body antialiased`}
       >
         <AuthInitializer />
-        <Nav />
-        {children}
+        <TooltipProvider delayDuration={300}>
+          <Nav />
+          {children}
+        </TooltipProvider>
         <Toaster position="bottom-right" />
       </body>
     </html>

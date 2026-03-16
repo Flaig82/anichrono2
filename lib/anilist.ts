@@ -399,6 +399,90 @@ export async function fetchSeasonalTrending(
   });
 }
 
+// --- Full media fetch (for franchise creation) ---
+
+export interface AniListMediaFull extends AniListMedia {
+  genres: string[];
+  studio: string | null;
+  seasonYear: number | null;
+  season: string | null;
+  episodes: number | null;
+  format: string | null;
+}
+
+const MEDIA_BY_ID_FULL_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: ANIME) {
+      id
+      title {
+        english
+        romaji
+      }
+      description(asHtml: false)
+      coverImage {
+        extraLarge
+        large
+      }
+      bannerImage
+      averageScore
+      meanScore
+      popularity
+      status
+      genres
+      studios(isMain: true) {
+        nodes {
+          name
+          isAnimationStudio
+        }
+      }
+      seasonYear
+      season
+      episodes
+      format
+    }
+  }
+`;
+
+export async function fetchMediaByIdFull(id: number): Promise<AniListMediaFull | null> {
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: MEDIA_BY_ID_FULL_QUERY, variables: { id } }),
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return null;
+  }
+
+  const json = await res.json();
+  const media = json.data?.Media ?? null;
+  if (!media) return null;
+
+  const mainStudio = media.studios?.nodes?.find(
+    (s: { isAnimationStudio: boolean }) => s.isAnimationStudio,
+  ) ?? media.studios?.nodes?.[0] ?? null;
+
+  return {
+    id: media.id,
+    titleEnglish: media.title.english,
+    titleRomaji: media.title.romaji,
+    description: media.description,
+    coverImageUrl: media.coverImage.extraLarge ?? media.coverImage.large,
+    bannerImageUrl: media.bannerImage,
+    averageScore: media.averageScore,
+    meanScore: media.meanScore,
+    memberCount: media.popularity,
+    status: media.status,
+    genres: media.genres ?? [],
+    studio: mainStudio?.name ?? null,
+    seasonYear: media.seasonYear,
+    season: media.season,
+    episodes: media.episodes,
+    format: media.format,
+  };
+}
+
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",

@@ -2,6 +2,13 @@ import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { questProgressSchema } from "@/lib/validations/quest";
 import { progressQuests } from "@/lib/quests";
+import { createRateLimiter } from "@/lib/rate-limit";
+
+const questLimiter = createRateLimiter("quest-progress", {
+  burstLimit: 10,
+  burstWindowMs: 60_000,
+  dailyLimit: 100,
+});
 
 /** POST /api/quest/progress — manually increment quest progress */
 export async function POST(request: Request) {
@@ -12,6 +19,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const limit = questLimiter.check(user.id);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: limit.message }, { status: 429 });
   }
 
   const body = await request.json();

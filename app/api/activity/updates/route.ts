@@ -38,6 +38,8 @@ export async function GET() {
         description: p.title,
         poster: f?.cover_image_url ?? null,
         created_at: p.applied_at!,
+        like_count: 0,
+        user_liked: false,
       });
     }
   }
@@ -51,6 +53,8 @@ export async function GET() {
         description: "Added to franchise database",
         poster: f.cover_image_url ?? null,
         created_at: f.created_at,
+        like_count: 0,
+        user_liked: false,
       });
     }
   }
@@ -61,5 +65,84 @@ export async function GET() {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
-  return NextResponse.json(items.slice(0, 10));
+  const sliced = items.slice(0, 10);
+
+  if (sliced.length === 0) {
+    return NextResponse.json([]);
+  }
+
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Build like item IDs with their types
+  const proposalIds = sliced.filter((i) => i.kind === "proposal_applied").map((i) => i.id);
+  const franchiseIds = sliced.filter((i) => i.kind === "new_franchise").map((i) => i.id);
+
+  // Batch-fetch like counts for proposals
+  const countMap = new Map<string, number>();
+
+  if (proposalIds.length > 0) {
+    const { data: proposalLikes } = await supabase
+      .from("activity_like")
+      .select("item_id")
+      .eq("item_type", "proposal")
+      .in("item_id", proposalIds);
+
+    for (const row of proposalLikes ?? []) {
+      countMap.set(row.item_id, (countMap.get(row.item_id) ?? 0) + 1);
+    }
+  }
+
+  if (franchiseIds.length > 0) {
+    const { data: franchiseLikes } = await supabase
+      .from("activity_like")
+      .select("item_id")
+      .eq("item_type", "franchise")
+      .in("item_id", franchiseIds);
+
+    for (const row of franchiseLikes ?? []) {
+      countMap.set(row.item_id, (countMap.get(row.item_id) ?? 0) + 1);
+    }
+  }
+
+  // Batch-fetch current user's likes
+  const userLikedSet = new Set<string>();
+  if (user) {
+    if (proposalIds.length > 0) {
+      const { data: userPLikes } = await supabase
+        .from("activity_like")
+        .select("item_id")
+        .eq("item_type", "proposal")
+        .eq("user_id", user.id)
+        .in("item_id", proposalIds);
+
+      for (const row of userPLikes ?? []) {
+        userLikedSet.add(row.item_id);
+      }
+    }
+
+    if (franchiseIds.length > 0) {
+      const { data: userFLikes } = await supabase
+        .from("activity_like")
+        .select("item_id")
+        .eq("item_type", "franchise")
+        .eq("user_id", user.id)
+        .in("item_id", franchiseIds);
+
+      for (const row of userFLikes ?? []) {
+        userLikedSet.add(row.item_id);
+      }
+    }
+  }
+
+  // Attach like data
+  const enriched = sliced.map((item) => ({
+    ...item,
+    like_count: countMap.get(item.id) ?? 0,
+    user_liked: userLikedSet.has(item.id),
+  }));
+
+  return NextResponse.json(enriched);
 }

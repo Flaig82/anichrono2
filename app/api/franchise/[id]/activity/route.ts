@@ -31,8 +31,54 @@ export async function GET(
     .order("applied_at", { ascending: false })
     .limit(5);
 
+  // Collect all proposal IDs for like data
+  const allProposals = [...(pending ?? []), ...(recent ?? [])];
+  const proposalIds = allProposals.map((p) => p.id);
+
+  // Default like values
+  const countMap = new Map<string, number>();
+  const userLikedSet = new Set<string>();
+
+  if (proposalIds.length > 0) {
+    // Batch-fetch like counts
+    const { data: likes } = await supabase
+      .from("activity_like")
+      .select("item_id")
+      .eq("item_type", "proposal")
+      .in("item_id", proposalIds);
+
+    for (const row of likes ?? []) {
+      countMap.set(row.item_id, (countMap.get(row.item_id) ?? 0) + 1);
+    }
+
+    // Current user's likes
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: userLikes } = await supabase
+        .from("activity_like")
+        .select("item_id")
+        .eq("item_type", "proposal")
+        .eq("user_id", user.id)
+        .in("item_id", proposalIds);
+
+      for (const row of userLikes ?? []) {
+        userLikedSet.add(row.item_id);
+      }
+    }
+  }
+
+  const attachLikes = <T extends { id: string }>(items: T[]) =>
+    items.map((item) => ({
+      ...item,
+      like_count: countMap.get(item.id) ?? 0,
+      user_liked: userLikedSet.has(item.id),
+    }));
+
   return NextResponse.json({
-    pending: pending ?? [],
-    recent: recent ?? [],
+    pending: attachLikes(pending ?? []),
+    recent: attachLikes(recent ?? []),
   });
 }

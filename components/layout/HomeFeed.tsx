@@ -1,19 +1,49 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bookmark,
-  Heart,
+  ThumbsUp,
   GitPullRequestArrow,
   Plus,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import { useLiveActivity, useContentUpdates } from "@/hooks/use-activity-feed";
 import { getRelativeTime } from "@/lib/utils";
+import AuthModal from "@/components/shared/AuthModal";
 import type { LiveActivityItem, ContentUpdateItem } from "@/types/activity";
+
+/* ── Like helper ── */
+
+async function toggleLike(
+  id: string,
+  itemType: "activity" | "proposal" | "franchise",
+  currentlyLiked: boolean,
+): Promise<{ liked: boolean; likeCount: number } | null> {
+  try {
+    const res = currentlyLiked
+      ? await fetch(`/api/activity/${id}/like?item_type=${itemType}`, { method: "DELETE" })
+      : await fetch(`/api/activity/${id}/like`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item_type: itemType }),
+        });
+
+    if (res.status === 401) return null; // signal auth needed
+    if (res.status === 429) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Too many requests. Slow down.");
+      return { liked: currentlyLiked, likeCount: -1 };
+    }
+    if (!res.ok) return { liked: currentlyLiked, likeCount: -1 }; // keep current state
+    return res.json();
+  } catch {
+    return { liked: currentlyLiked, likeCount: -1 };
+  }
+}
 
 /* ── Action display mapping ── */
 
@@ -61,6 +91,41 @@ function AvatarFallback({ name }: { name: string | null }) {
   );
 }
 
+/* ── Like button ── */
+
+function LikeButton({
+  liked,
+  count,
+  onClick,
+}: {
+  liked: boolean;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 transition-colors"
+      type="button"
+    >
+      {count > 0 && (
+        <span className={`font-mono text-[11px] ${liked ? "text-aura-orange" : "text-aura-muted2"}`}>
+          {count}
+        </span>
+      )}
+      <div
+        className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
+          liked
+            ? "bg-[#eb6325] shadow-[0_4px_14px_rgba(255,131,74,0.48)]"
+            : "bg-white/[0.08] hover:bg-white/[0.14]"
+        }`}
+      >
+        <ThumbsUp size={12} className={liked ? "text-white" : "text-aura-muted2"} />
+      </div>
+    </button>
+  );
+}
+
 /* ── Skeleton loader ── */
 
 function LiveSkeleton() {
@@ -105,7 +170,13 @@ function UpdatesSkeleton() {
 
 /* ── Update card (bottom feed) ── */
 
-function UpdateCard({ item }: { item: ContentUpdateItem }) {
+function UpdateCard({
+  item,
+  onLike,
+}: {
+  item: ContentUpdateItem;
+  onLike: (id: string, kind: ContentUpdateItem["kind"]) => void;
+}) {
   const { containerRef, canvasRef } = useDitherHover();
 
   const Icon = item.kind === "proposal_applied" ? GitPullRequestArrow : Plus;
@@ -154,12 +225,11 @@ function UpdateCard({ item }: { item: ContentUpdateItem }) {
           {getRelativeTime(item.created_at)}
         </span>
 
-        <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
-          <Bookmark size={12} className="text-white/50" />
-        </button>
-        <button className="flex h-6 w-6 items-center justify-center rounded-full bg-aura-bg3/50 transition-colors hover:bg-aura-bg3">
-          <Heart size={12} className="text-white/50" />
-        </button>
+        <LikeButton
+          liked={item.user_liked}
+          count={item.like_count}
+          onClick={() => onLike(item.id, item.kind)}
+        />
       </div>
     </div>
   );
@@ -174,8 +244,9 @@ const itemVariants = {
 };
 
 export default function HomeFeed() {
-  const { data: liveItems, isLoading: liveLoading } = useLiveActivity();
-  const { data: updateItems, isLoading: updatesLoading } = useContentUpdates();
+  const { data: liveItems, isLoading: liveLoading, mutate: mutateLive } = useLiveActivity();
+  const { data: updateItems, isLoading: updatesLoading, mutate: mutateUpdates } = useContentUpdates();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Track IDs we've already rendered so we only animate truly new items
   const seenIdsRef = useRef<Set<string>>(new Set());
@@ -196,6 +267,68 @@ export default function HomeFeed() {
       }
     }
   }, [liveItems]);
+
+  const handleLiveLike = useCallback(
+    async (id: string) => {
+      if (!liveItems) return;
+      const item = liveItems.find((i) => i.id === id);
+      if (!item) return;
+
+      // Optimistic update
+      const optimistic = liveItems.map((i) =>
+        i.id === id
+          ? {
+              ...i,
+              user_liked: !i.user_liked,
+              like_count: i.user_liked ? i.like_count - 1 : i.like_count + 1,
+            }
+          : i,
+      );
+      mutateLive(optimistic, false);
+
+      const result = await toggleLike(id, "activity", item.user_liked);
+      if (result === null) {
+        // Auth required — revert and show modal
+        mutateLive(liveItems, false);
+        setShowAuthModal(true);
+        return;
+      }
+      // Revalidate from server
+      mutateLive();
+    },
+    [liveItems, mutateLive],
+  );
+
+  const handleUpdateLike = useCallback(
+    async (id: string, kind: ContentUpdateItem["kind"]) => {
+      if (!updateItems) return;
+      const item = updateItems.find((i) => i.id === id);
+      if (!item) return;
+
+      const itemType = kind === "proposal_applied" ? "proposal" : "franchise";
+
+      // Optimistic update
+      const optimistic = updateItems.map((i) =>
+        i.id === id
+          ? {
+              ...i,
+              user_liked: !i.user_liked,
+              like_count: i.user_liked ? i.like_count - 1 : i.like_count + 1,
+            }
+          : i,
+      );
+      mutateUpdates(optimistic, false);
+
+      const result = await toggleLike(id, itemType, item.user_liked);
+      if (result === null) {
+        mutateUpdates(updateItems, false);
+        setShowAuthModal(true);
+        return;
+      }
+      mutateUpdates();
+    },
+    [updateItems, mutateUpdates],
+  );
 
   return (
     <>
@@ -270,6 +403,13 @@ export default function HomeFeed() {
                             {displayTitle}
                           </p>
                         </div>
+                        <div className="shrink-0">
+                          <LikeButton
+                            liked={item.user_liked}
+                            count={item.like_count}
+                            onClick={() => handleLiveLike(item.id)}
+                          />
+                        </div>
                       </div>
                       {i < liveItems.length - 1 && (
                         <div className="mt-4 h-px bg-white/[0.06]" />
@@ -303,10 +443,14 @@ export default function HomeFeed() {
           </div>
         ) : (
           updateItems.map((item) => (
-            <UpdateCard key={item.id} item={item} />
+            <UpdateCard key={item.id} item={item} onLike={handleUpdateLike} />
           ))
         )}
       </div>
+
+      {showAuthModal && (
+        <AuthModal onClose={() => setShowAuthModal(false)} />
+      )}
     </>
   );
 }

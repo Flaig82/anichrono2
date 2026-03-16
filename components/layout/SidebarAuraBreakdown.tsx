@@ -4,35 +4,13 @@ import useSWR from "swr";
 import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 import { createClient } from "@/lib/supabase";
-import { AURA_COLORS, AURA_LABELS, AURA_TYPES, type AuraType } from "@/types/aura";
+import { AURA_COLORS, AURA_DESCRIPTIONS, AURA_LABELS, AURA_TYPES, type AuraType } from "@/types/aura";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AuraTypeIcon from "@/components/shared/AuraTypeIcon";
 
 interface AuraRow {
   aura_type: AuraType;
   value: number;
-}
-
-function AuraDiamond({ color }: { color: string }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      className="shrink-0"
-    >
-      <rect
-        x="8"
-        y="1.5"
-        width="9.19"
-        height="9.19"
-        rx="1.5"
-        transform="rotate(45 8 1.5)"
-        stroke={color}
-        strokeWidth="1.5"
-        fill={`${color}18`}
-      />
-    </svg>
-  );
 }
 
 export default function SidebarAuraBreakdown() {
@@ -117,12 +95,25 @@ export default function SidebarAuraBreakdown() {
           >
             <div className="flex items-center justify-between">
               <div className="flex w-[160px] flex-col gap-2.5">
-                <div className="flex h-4 items-center gap-2.5">
-                  <AuraDiamond color={AURA_COLORS[row.aura_type]} />
-                  <span className="flex-1 font-body text-xs tracking-[-0.12px] text-white">
-                    {AURA_LABELS[row.aura_type]}
-                  </span>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-4 cursor-default items-center gap-2.5">
+                      <AuraTypeIcon type={row.aura_type} size={14} />
+                      <span className="flex-1 font-body text-xs tracking-[-0.12px] text-white underline decoration-white/20 decoration-dotted underline-offset-4">
+                        {AURA_LABELS[row.aura_type]}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-[220px]">
+                    <p className="flex items-center gap-1.5 font-body text-[12px] font-bold text-white">
+                      <AuraTypeIcon type={row.aura_type} size={13} />
+                      {AURA_LABELS[row.aura_type]}
+                    </p>
+                    <p className="mt-1 font-body text-[11px] leading-relaxed text-aura-muted2">
+                      {AURA_DESCRIPTIONS[row.aura_type]}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
                 <div className="flex h-1.5 items-start overflow-clip rounded-full">
                   <div
                     className="h-[3px] shrink-0 rounded transition-all duration-500"

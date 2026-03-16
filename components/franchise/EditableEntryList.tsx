@@ -14,6 +14,8 @@ interface EditableEntryListProps {
   onSplit: (id: string) => void;
   onInsertAt?: (index: number, data: RelationDropData) => void;
   onInsertBlankAt?: (index: number) => void;
+  expandedEntryId?: string | null;
+  onToggleExpand?: (id: string) => void;
 }
 
 export interface RelationDropData {
@@ -67,6 +69,8 @@ export default function EditableEntryList({
   onSplit,
   onInsertAt,
   onInsertBlankAt,
+  expandedEntryId,
+  onToggleExpand,
 }: EditableEntryListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -152,6 +156,8 @@ export default function EditableEntryList({
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onSplit={onSplit}
+                isExpanded={expandedEntryId === entry.id}
+                onToggleExpand={onToggleExpand}
               />
             </div>
           </Reorder.Item>
