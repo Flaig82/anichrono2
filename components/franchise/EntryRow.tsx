@@ -5,7 +5,7 @@ import { CheckCircle2, Compass, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AMAZON_TAG = "animechrono-20";
-const PURCHASABLE_TYPES = new Set(["movie", "ova", "ona", "special"]);
+const PURCHASABLE_TYPES = new Set(["movie", "ova", "ona", "special", "manga"]);
 
 function buildAmazonUrl(franchiseTitle: string, entryTitle: string): string {
   const query = encodeURIComponent(franchiseTitle + " " + entryTitle);

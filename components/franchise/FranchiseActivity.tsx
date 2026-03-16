@@ -8,6 +8,8 @@ import {
   Check,
   Loader2,
   ThumbsUp,
+  ShoppingBag,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
@@ -36,6 +38,21 @@ interface ActivityProposal {
 interface ActivityData {
   pending: ActivityProposal[];
   recent: ActivityProposal[];
+}
+
+const AMAZON_TAG = "animechrono-20";
+
+function buildShopLinks(franchiseTitle: string) {
+  const title = franchiseTitle.replace(/\s*\(.*?\)\s*/g, "").trim();
+  return [
+    { label: "Manga", query: `${title} manga` },
+    { label: "Blu-ray", query: `${title} anime blu-ray` },
+    { label: "Figures", query: `${title} anime figure` },
+  ];
+}
+
+function buildAmazonUrl(query: string): string {
+  return `https://www.amazon.com/s?k=${encodeURIComponent(query)}&tag=${AMAZON_TAG}`;
 }
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -253,18 +270,32 @@ export default function FranchiseActivity({
 
   return (
     <div className="flex flex-col gap-2 pt-2">
-      {/* Franchise stats card */}
-      <div className="relative flex flex-col gap-4 overflow-hidden rounded-lg bg-aura-bg3 p-5">
+      {/* Shop card */}
+      <div className="relative flex flex-col gap-3 overflow-hidden rounded-lg bg-aura-bg3 p-5">
         <PatternOverlay />
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-aura-orange" />
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-aura-muted">
-            Franchise Activity
+            Shop
           </span>
         </div>
-        <p className="font-body text-[16px] font-bold tracking-[-0.32px] text-white">
-          {franchiseTitle}
-        </p>
+          <div className="flex flex-col gap-0.5">
+            {buildShopLinks(franchiseTitle).map((product) => (
+              <a
+                key={product.label}
+                href={buildAmazonUrl(product.query)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.04]"
+              >
+                <ShoppingBag size={14} className="shrink-0 text-aura-muted" />
+                <p className="min-w-0 flex-1 font-body text-[12px] font-bold text-white">
+                  {franchiseTitle} {product.label}
+                </p>
+                <ExternalLink size={11} className="shrink-0 text-aura-muted/50" />
+              </a>
+            ))}
+          </div>
       </div>
 
       {isLoading ? (
