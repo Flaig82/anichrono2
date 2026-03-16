@@ -130,6 +130,17 @@ function filterAndSort(
     result = result.filter((f) => f.status === status);
   }
 
+  // Decade
+  const decade = params.decade as string | undefined;
+  if (decade === "pre") {
+    result = result.filter((f) => f.yearStarted > 0 && f.yearStarted < 1970);
+  } else if (decade) {
+    const decadeStart = Number(decade);
+    result = result.filter(
+      (f) => f.yearStarted >= decadeStart && f.yearStarted < decadeStart + 10,
+    );
+  }
+
   // Genres (all selected genres must match)
   const genres = params.genre
     ? Array.isArray(params.genre) ? params.genre : [params.genre]

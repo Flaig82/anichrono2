@@ -24,6 +24,16 @@ const GENRES = [
   "Slice of Life", "Sports", "Supernatural", "Thriller",
 ];
 
+const currentYear = new Date().getFullYear();
+const DECADES = [
+  { value: "", label: "Any Year" },
+  ...Array.from({ length: 6 }, (_, i) => {
+    const decade = currentYear - i * 10 - (currentYear % 10);
+    return { value: String(decade), label: `${decade}s` };
+  }),
+  { value: "pre", label: "Pre-1970s" },
+];
+
 interface ChroniclesHeroProps {
   franchiseCount: number;
 }
@@ -37,7 +47,8 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
 
   const activeGenres = searchParams.getAll("genre");
   const activeStatus = searchParams.get("status");
-  const hasFilters = activeGenres.length > 0 || activeStatus || searchParams.get("q");
+  const activeDecade = searchParams.get("decade");
+  const hasFilters = activeGenres.length > 0 || activeStatus || activeDecade || searchParams.get("q");
 
   const updateParams = useCallback(
     (updates: Record<string, string | string[] | null>) => {
@@ -154,6 +165,16 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+
+          <select
+            value={activeDecade ?? ""}
+            onChange={(e) => updateParams({ decade: e.target.value || null })}
+            className={selectClasses}
+          >
+            {DECADES.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
             ))}
           </select>
 

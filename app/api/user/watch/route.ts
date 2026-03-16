@@ -314,6 +314,59 @@ export async function POST(request: Request) {
   if (becameCompleted) {
     const cq = await progressQuests(supabase, user.id, "complete_anime", 1);
     completedQuests.push(...cq);
+
+    // Semantic quest checks — look up franchise metadata for conditional quests
+    const { data: franchise } = await supabase
+      .from("franchise")
+      .select("year_started, obscurity_tier")
+      .eq("id", franchise_id)
+      .single();
+
+    if (franchise) {
+      // Pre-year quest (e.g. "Complete a pre-2000 anime")
+      if (franchise.year_started && franchise.year_started < 2000) {
+        const cq2 = await progressQuests(supabase, user.id, "complete_pre_year", 1);
+        completedQuests.push(...cq2);
+      }
+
+      // Obscure quest (e.g. "Complete an anime with <1000 AniList members")
+      if (franchise.obscurity_tier === "obscure") {
+        const cq2 = await progressQuests(supabase, user.id, "complete_obscure", 1);
+        completedQuests.push(...cq2);
+      }
+    }
+
+    // Franchise completion quest (e.g. "Complete an 8+ entry franchise")
+    // Check if ALL entries in this franchise are now completed
+    const { count: totalFranchiseEntries } = await supabase
+      .from("entry")
+      .select("id", { count: "exact", head: true })
+      .eq("franchise_id", franchise_id)
+      .eq("is_removed", false);
+
+    const { count: completedFranchiseEntries } = await supabase
+      .from("watch_entry")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("franchise_id", franchise_id)
+      .eq("status", "completed");
+
+    if (
+      totalFranchiseEntries &&
+      completedFranchiseEntries &&
+      completedFranchiseEntries >= totalFranchiseEntries
+    ) {
+      // Only progress "complete_franchise" if franchise has 8+ entries (matches quest condition)
+      if (totalFranchiseEntries >= 8) {
+        const cq2 = await progressQuests(supabase, user.id, "complete_franchise", 1);
+        completedQuests.push(...cq2);
+      }
+
+      // Decades quest — increment by 1 per franchise completion
+      // (each completed franchise can contribute at most one new decade)
+      const cq3 = await progressQuests(supabase, user.id, "complete_decades", 1);
+      completedQuests.push(...cq3);
+    }
   }
 
   return NextResponse.json({
