@@ -38,6 +38,12 @@ export default function Footer() {
           >
             Discover
           </Link>
+          <Link
+            href="/feedback"
+            className="font-body text-[12px] text-aura-muted2 hover:text-white transition-colors"
+          >
+            Feedback
+          </Link>
         </div>
 
         {/* Right: Legal links */}
