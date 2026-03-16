@@ -257,7 +257,7 @@ export default function EntryRow({
           </div>
         </div>
       ) : (
-        <div className="hidden shrink-0 items-center justify-end sm:flex sm:w-[150px]">
+        <div className="flex shrink-0 items-center justify-end sm:w-[150px]">
           {PURCHASABLE_TYPES.has(entryType) ? (
             <a
               href={buildAmazonUrl(franchiseTitle, title)}
