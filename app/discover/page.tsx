@@ -202,7 +202,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      <div className="sticky top-[68px] h-fit">
+      <div className="sticky top-[68px] hidden h-fit lg:block">
         <RightSidebar>
           <HomeFeed />
         </RightSidebar>
