@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
 import MasterOrderSection from "@/components/franchise/MasterOrderSection";
@@ -59,6 +60,46 @@ function groupEntriesByParentSeries(entries: EntryRow[]): EntryGroupData[] {
   return groups;
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const franchise = await getFranchise(params.slug);
+
+  if (!franchise) {
+    return { title: "Franchise Not Found" };
+  }
+
+  const title = `${franchise.title} Watch Order`;
+  const description =
+    franchise.description ??
+    `Complete watch order guide for ${franchise.title} — community-curated on AnimeChrono.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: `https://animechrono.com/franchise/${franchise.slug}`,
+      images: franchise.cover_image_url
+        ? [{ url: franchise.cover_image_url, alt: franchise.title }]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: franchise.cover_image_url ? [franchise.cover_image_url] : [],
+    },
+    alternates: {
+      canonical: `https://animechrono.com/franchise/${franchise.slug}`,
+    },
+  };
+}
+
 export default async function FranchisePage({
   params,
 }: {
@@ -97,8 +138,37 @@ export default async function FranchisePage({
   const entries = await getEntries(franchise.id);
   const entryGroups = groupEntriesByParentSeries(entries);
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://animechrono.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Chronicles",
+        item: "https://animechrono.com/chronicles",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: franchise.title,
+        item: `https://animechrono.com/franchise/${franchise.slug}`,
+      },
+    ],
+  };
+
   return (
     <main className="px-4 md:px-8 lg:px-[120px] pt-10 pb-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <MasterOrderSection
         franchiseId={franchise.id}
         entries={entries}

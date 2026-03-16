@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import RightSidebar from "@/components/layout/RightSidebar";
+
+export const metadata: Metadata = {
+  title: "Discover",
+  description:
+    "Discover new anime to watch. Browse by genre, season, popularity, and more on AnimeChrono.",
+};
+
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
 import PosterRow from "@/components/shared/PosterRow";

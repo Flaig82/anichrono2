@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import RightSidebar from "@/components/layout/RightSidebar";
+
+export const metadata: Metadata = {
+  title: "Chronicles",
+  description:
+    "Browse community-curated watch orders for every anime franchise. Find the best way to experience your favorite series.",
+};
+
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
 import SortTabs from "@/components/shared/SortTabs";

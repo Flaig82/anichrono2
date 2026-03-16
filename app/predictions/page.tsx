@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import RightSidebar from "@/components/layout/RightSidebar";
+
+export const metadata: Metadata = {
+  title: "Predictions",
+  description:
+    "Predict anime scores and compete on the seasonal Oracle leaderboard. Earn Oracle Aura for accurate predictions.",
+};
+
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
 import PredictionsHero from "@/components/layout/PredictionsHero";
