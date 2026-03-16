@@ -10,12 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 const selectClasses =
   "w-auto rounded-lg bg-black/40 border border-white/[0.07] px-3 py-2 pr-7 font-mono text-[11px] text-white outline-none cursor-pointer hover:border-white/20 transition-colors appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%238A94A8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_8px_center] bg-no-repeat";
 
-const SORT_OPTIONS = [
-  { value: "updated", label: "Recently Updated" },
-  { value: "alpha", label: "A–Z" },
-  { value: "year", label: "Year" },
-  { value: "entries", label: "Most Entries" },
-];
+// Sort is now handled by SortTabs component above the grid
 
 const STATUS_OPTIONS = [
   { value: "", label: "Any Status" },
@@ -42,8 +37,6 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
 
   const activeGenres = searchParams.getAll("genre");
   const activeStatus = searchParams.get("status");
-  const activeSort = searchParams.get("sort") ?? "updated";
-
   const hasFilters = activeGenres.length > 0 || activeStatus || searchParams.get("q");
 
   const updateParams = useCallback(
@@ -103,7 +96,7 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
               <br />
               orders, perfected.
             </h1>
-            <p className="max-w-[460px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+            <p className="max-w-[460px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
               {franchiseCount} franchise{franchiseCount !== 1 ? "s" : ""} with curated chronological
               watch orders maintained by the community.
             </p>
@@ -154,16 +147,6 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={activeSort}
-            onChange={(e) => updateParams({ sort: e.target.value })}
-            className={selectClasses}
-          >
-            {SORT_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-
           <select
             value={activeStatus ?? ""}
             onChange={(e) => updateParams({ status: e.target.value || null })}

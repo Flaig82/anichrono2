@@ -180,9 +180,9 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
         {nichePosters.length > 0 && (
           <section className="flex flex-col gap-5">
             <div className="flex flex-col gap-1">
-              <SectionLabel>Cult Favorites — 2x Pioneer Aura</SectionLabel>
+              <SectionLabel>Cult Favorites</SectionLabel>
               <p className="font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
-                10k–50k AniList members. Obscure enough to earn double Pioneer Aura.
+                10k–50k AniList members. Great anime the community hasn&apos;t chronicled yet.
               </p>
             </div>
             <PosterRow posters={nichePosters} />
@@ -192,9 +192,9 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
         {hiddenPosters.length > 0 && (
           <section className="flex flex-col gap-5">
             <div className="flex flex-col gap-1">
-              <SectionLabel>Hidden Gems — 4x Pioneer Aura</SectionLabel>
+              <SectionLabel>Hidden Gems</SectionLabel>
               <p className="font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
-                Under 10k members. Chronicle these and earn maximum Pioneer Aura.
+                Under 10k members. Chronicle these hidden gems for the community.
               </p>
             </div>
             <PosterRow posters={hiddenPosters} />

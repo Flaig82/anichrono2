@@ -115,7 +115,7 @@ export default function DiscoverHero({ unclaimedCount }: DiscoverHeroProps) {
             <br />
             your expertise.
           </h1>
-          <p className="max-w-[460px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+          <p className="max-w-[460px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
             {unclaimedCount}+ anime without a community watch order.
             Claim a franchise and earn Archivist Aura.
           </p>

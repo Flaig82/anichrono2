@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Montserrat, Lato } from "next/font/google";
 import Nav from "@/components/layout/Nav";
+import Footer from "@/components/layout/Footer";
+import CookieConsent from "@/components/shared/CookieConsent";
 import AuthInitializer from "@/components/layout/AuthInitializer";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,6 +42,8 @@ export default function RootLayout({
         <TooltipProvider delayDuration={300}>
           <Nav />
           {children}
+          <Footer />
+          <CookieConsent />
         </TooltipProvider>
         <Toaster position="bottom-right" />
       </body>

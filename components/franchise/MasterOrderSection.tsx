@@ -14,6 +14,7 @@ import FranchiseHero from "./FranchiseHero";
 import FranchiseReviews from "./FranchiseReviews";
 import RightSidebar from "@/components/layout/RightSidebar";
 import RelationsSidebar from "./RelationsSidebar";
+import SimilarAnime from "./SimilarAnime";
 
 interface EntryGroupData {
   parentSeries: string;
@@ -173,7 +174,7 @@ export default function MasterOrderSection({
           />
         ) : activeTab === "reviews" ? (
           <FranchiseReviews franchiseId={franchiseId} />
-        ) : activeTab === "chronological" || activeTab === "release" ? (
+        ) : activeTab === "chronological" ? (
           <>
             {/* Entry list */}
             <div className="flex flex-col gap-8">
@@ -181,6 +182,7 @@ export default function MasterOrderSection({
                 <EntryGroup
                   key={group.parentSeries}
                   parentSeries={group.parentSeries}
+                  franchiseTitle={heroTitle}
                   coverImageUrl={
                     group.entries.find((e) => e.cover_image_url)
                       ?.cover_image_url ?? franchiseCoverImageUrl
@@ -233,6 +235,7 @@ export default function MasterOrderSection({
               franchiseTitle={heroTitle}
               currentEntries={entries}
             />
+            <SimilarAnime franchiseId={franchiseId} />
           </RightSidebar>
         )}
       </div>

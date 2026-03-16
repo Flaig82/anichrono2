@@ -6,7 +6,7 @@ import PosterRow from "@/components/shared/PosterRow";
 import ViewMoreButton from "@/components/shared/ViewMoreButton";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import { createClient } from "@/lib/supabase-server";
-import { fetchSeasonalTrending } from "@/lib/anilist";
+import { fetchSeasonalTrending, fetchDiscoverAnime } from "@/lib/anilist";
 import WeeklyQuests from "@/components/quest/DailyQuests";
 
 type Season = "WINTER" | "SPRING" | "SUMMER" | "FALL";
@@ -22,23 +22,24 @@ function getCurrentSeason(): { season: Season; year: number; label: string } {
   return { season, year: new Date().getFullYear(), label };
 }
 
-const discoverPosters = [
-  { src: "/images/poster-4.svg", alt: "Monster" },
-  { src: "/images/poster-1.svg", alt: "Steins;Gate" },
-  { src: "/images/poster-5.svg", alt: "Mushishi" },
-  { src: "/images/poster-3.svg", alt: "Ping Pong" },
-  { src: "/images/poster-6.svg", alt: "Tatami Galaxy" },
-  { src: "/images/poster-2.svg", alt: "Paranoia Agent" },
-];
 
-async function getRecentlyUpdatedFranchises() {
+async function getFranchises(opts: {
+  sortBy: "updated_at" | "created_at";
+  excludeIds?: string[];
+} = { sortBy: "updated_at" }) {
   const supabase = createClient();
 
-  const { data: franchises } = await supabase
+  let query = supabase
     .from("franchise")
     .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
-    .order("updated_at", { ascending: false })
+    .order(opts.sortBy, { ascending: false })
     .limit(3);
+
+  if (opts.excludeIds?.length) {
+    query = query.not("id", "in", `(${opts.excludeIds.join(",")})`);
+  }
+
+  const { data: franchises } = await query;
 
   if (!franchises) return [];
 
@@ -101,6 +102,7 @@ async function getRecentlyUpdatedFranchises() {
     const editor = lastEditorMap.get(f.id);
 
     return {
+      id: f.id,
       slug: f.slug,
       title: f.title,
       studio: f.studio ?? "",
@@ -122,10 +124,14 @@ async function getRecentlyUpdatedFranchises() {
 export default async function Home() {
   const supabase = createClient();
   const { season, year, label } = getCurrentSeason();
-  const [franchises, seasonalAnime] = await Promise.all([
-    getRecentlyUpdatedFranchises(),
+  const [updatedFranchises, seasonalAnime, hiddenGems] = await Promise.all([
+    getFranchises({ sortBy: "updated_at" }),
     fetchSeasonalTrending(season, year),
+    fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 }),
   ]);
+
+  const excludeIds = updatedFranchises.map((f) => f.id);
+  const recentlyAdded = await getFranchises({ sortBy: "created_at", excludeIds });
 
   // Collect all AniList IDs (the show itself + its prequels/parents)
   // to match against our franchise and entry tables
@@ -174,6 +180,13 @@ export default async function Home() {
     };
   });
 
+  const hiddenGemPosters = hiddenGems.slice(0, 12).map((a) => ({
+    src: a.coverImageUrl ?? "/images/poster-1.svg",
+    alt: a.titleEnglish ?? a.titleRomaji,
+    score: a.averageScore,
+    anilistId: a.id,
+  }));
+
   return (
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
       {/* Main content */}
@@ -184,12 +197,6 @@ export default async function Home() {
         {/* Weekly Quests — logged-in users only */}
         <WeeklyQuests />
 
-        {/* Popular this season */}
-        <section className="flex flex-col gap-5">
-          <SectionLabel>Popular {label} {year} season</SectionLabel>
-          <PosterRow posters={seasonPosters} />
-        </section>
-
         {/* Recently Updated Chronicles */}
         <section className="flex flex-col gap-5">
           <div className="flex items-center justify-between">
@@ -197,20 +204,48 @@ export default async function Home() {
             <ViewMoreButton href="/discover" />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {franchises.map((franchise) => (
+            {updatedFranchises.map((franchise) => (
               <FranchiseCard key={franchise.slug} {...franchise} />
             ))}
           </div>
         </section>
 
-        {/* Discover */}
+        {/* Recently Added Chronicles */}
+        {recentlyAdded.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <SectionLabel>Recently Added Chronicles</SectionLabel>
+              <ViewMoreButton href="/discover" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {recentlyAdded.map((franchise) => (
+                <FranchiseCard key={franchise.slug} {...franchise} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Popular this season */}
         <section className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <SectionLabel>Discover something new</SectionLabel>
-            <ViewMoreButton href="/discover" />
-          </div>
-          <PosterRow posters={discoverPosters} />
+          <SectionLabel>Popular {label} {year} season</SectionLabel>
+          <PosterRow posters={seasonPosters} />
         </section>
+
+        {/* Hidden Gems */}
+        {hiddenGemPosters.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <SectionLabel>Hidden Gems</SectionLabel>
+                <p className="font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
+                  Under 10k members. Chronicle these hidden gems for the community.
+                </p>
+              </div>
+              <ViewMoreButton href="/discover" />
+            </div>
+            <PosterRow posters={hiddenGemPosters} />
+          </section>
+        )}
       </div>
 
       {/* Sticky sidebar — hidden on mobile */}

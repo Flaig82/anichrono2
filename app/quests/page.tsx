@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Compass, CalendarDays, Sparkles, Eye } from "lucide-react";
+import { cn } from "@/lib/utils";
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
@@ -12,6 +14,13 @@ import { useAuth } from "@/hooks/use-auth";
 import type { QuestCategory } from "@/types/quest";
 
 /* ── Tab config ── */
+
+const QUEST_TABS = [
+  { key: "journey" as QuestCategory, label: "Journey", icon: Compass },
+  { key: "weekly" as QuestCategory, label: "Weekly", icon: CalendarDays },
+  { key: "seasonal" as QuestCategory, label: "Seasonal", icon: Sparkles },
+  { key: "mastery" as QuestCategory, label: "Mastery", icon: Eye },
+] as const;
 
 const VALID_TABS: QuestCategory[] = ["journey", "weekly", "seasonal", "mastery"];
 
@@ -41,6 +50,17 @@ function QuestsContent() {
   const tabDescription = TAB_DESCRIPTIONS[tab];
   const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
 
+  const handleTabChange = (newTab: QuestCategory) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newTab === "journey") {
+      params.delete("tab");
+    } else {
+      params.set("tab", newTab);
+    }
+    const qs = params.toString();
+    router.push(`/quests${qs ? `?${qs}` : ""}`);
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
@@ -62,6 +82,25 @@ function QuestsContent() {
       {/* Main content */}
       <div className="flex flex-1 flex-col gap-10">
         <QuestsHero />
+
+        {/* Tab bar — below hero, matching franchise page style */}
+        <div className="flex flex-wrap items-center gap-2">
+          {QUEST_TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => handleTabChange(key)}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors md:px-5",
+                tab === key
+                  ? "bg-aura-orange"
+                  : "bg-[rgba(49,49,49,0.6)] hover:bg-[rgba(49,49,49,0.8)]",
+              )}
+            >
+              <Icon size={16} />
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
 
         <section className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">

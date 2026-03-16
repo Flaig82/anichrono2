@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { CheckCircle2, Compass } from "lucide-react";
+import { CheckCircle2, Compass, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const AMAZON_TAG = "animechrono-20";
+const PURCHASABLE_TYPES = new Set(["movie", "ova", "ona", "special"]);
+
+function buildAmazonUrl(franchiseTitle: string, entryTitle: string): string {
+  const query = encodeURIComponent(franchiseTitle + " " + entryTitle);
+  return `https://www.amazon.com/s?k=${query}&tag=${AMAZON_TAG}`;
+}
 
 const ENTRY_TYPE_COLORS: Record<string, string> = {
   episodes: "text-entry-episodes",
@@ -25,6 +33,7 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
 interface EntryRowProps {
   entryId: string;
   title: string;
+  franchiseTitle: string;
   entryType: string;
   episodeStart: number | null;
   episodeEnd: number | null;
@@ -113,6 +122,7 @@ function ProgressRing({
 export default function EntryRow({
   entryId,
   title,
+  franchiseTitle,
   entryType,
   episodeStart,
   episodeEnd,
@@ -248,9 +258,25 @@ export default function EntryRow({
         </div>
       ) : (
         <div className="hidden shrink-0 items-center justify-end sm:flex sm:w-[150px]">
-          <span className={`font-body text-xs font-light ${typeColor}`}>
-            {episodeInfo}
-          </span>
+          {PURCHASABLE_TYPES.has(entryType) ? (
+            <a
+              href={buildAmazonUrl(franchiseTitle, title)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Find on Amazon"
+              className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/[0.05] hover:text-aura-orange"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className={`font-body text-xs font-light ${typeColor}`}>
+                {episodeInfo}
+              </span>
+              <ShoppingBag size={13} className="text-aura-muted/50" />
+            </a>
+          ) : (
+            <span className={`font-body text-xs font-light ${typeColor}`}>
+              {episodeInfo}
+            </span>
+          )}
         </div>
       )}
 

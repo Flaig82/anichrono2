@@ -17,6 +17,7 @@ interface WatchData {
 
 interface EntryGroupProps {
   parentSeries: string;
+  franchiseTitle: string;
   coverImageUrl: string | null;
   status: string;
   entryType: string;
@@ -41,6 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function EntryGroup({
   parentSeries,
+  franchiseTitle,
   coverImageUrl,
   status,
   entryType,
@@ -90,6 +92,7 @@ export default function EntryGroup({
             key={entry.id}
             entryId={entry.id}
             title={entry.title}
+            franchiseTitle={franchiseTitle}
             entryType={entry.entry_type}
             episodeStart={entry.episode_start}
             episodeEnd={entry.episode_end}

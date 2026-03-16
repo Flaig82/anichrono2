@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Lock, HelpCircle } from "lucide-react";
+import { Check, ChevronRight, HelpCircle } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import type { AuraType } from "@/types/aura";
 import { AURA_DESCRIPTIONS } from "@/types/aura";
@@ -63,8 +63,7 @@ export default function QuestCard({
 }: QuestCardProps) {
   const { containerRef, canvasRef } = useDitherHover();
 
-  const isActive = !completed && revealed && progress > 0;
-  const isLocked = !completed && revealed && progress === 0 && category === "journey";
+  const isActive = !completed && revealed;
   const isUnrevealed = !revealed;
   const isMastery = category === "mastery";
 
@@ -93,7 +92,7 @@ export default function QuestCard({
 
   return (
     <div
-      ref={!completed && !isLocked ? containerRef : undefined}
+      ref={!completed ? containerRef : undefined}
       className={`relative flex flex-col items-stretch overflow-hidden rounded-xl transition-all duration-200 hover:scale-[1.02] sm:flex-row ${
         completed
           ? "border border-[#313131]"
@@ -102,13 +101,13 @@ export default function QuestCard({
             : ""
       }`}
       style={
-        completed || isLocked
+        completed
           ? undefined
           : { backgroundImage: AURA_GRADIENTS[auraType] ?? "" }
       }
     >
       {/* Dither hover + pattern overlay — active/clickable quests only */}
-      {!completed && !isLocked && (
+      {!completed && (
         <>
           <canvas
             ref={canvasRef}
@@ -148,7 +147,7 @@ export default function QuestCard({
         </p>
 
         {/* Progress bar — active quests only */}
-        {isActive && target > 1 && (
+        {isActive && !completed && target > 1 && (
           <div className="mt-1 flex items-center gap-3">
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
               <div
@@ -198,13 +197,6 @@ export default function QuestCard({
             <Check size={14} className="text-aura-muted2" />
             <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-aura-muted2">
               Earned
-            </span>
-          </div>
-        ) : isLocked ? (
-          <div className="flex items-center gap-1.5">
-            <Lock size={14} className="text-aura-muted" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-aura-muted">
-              Locked
             </span>
           </div>
         ) : (

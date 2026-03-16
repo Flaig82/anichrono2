@@ -1,19 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import SectionLabel from "@/components/shared/SectionLabel";
 import { useAuth } from "@/hooks/use-auth";
 import { ERA_THRESHOLDS, ERA_EMOJI } from "@/types/aura";
 import type { Era } from "@/types/aura";
-
-const QUEST_TABS = [
-  { key: "journey", label: "Journey" },
-  { key: "weekly", label: "Weekly" },
-  { key: "seasonal", label: "Seasonal" },
-  { key: "mastery", label: "Mastery" },
-] as const;
-
-type QuestTab = (typeof QUEST_TABS)[number]["key"];
 
 function getNextEra(currentEra: Era): Era | null {
   const order: Era[] = ["initiate", "wanderer", "adept", "ascendant"];
@@ -28,21 +18,6 @@ function getEraLabel(era: Era): string {
 
 export default function QuestsHero() {
   const { profile } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const activeTab = (searchParams.get("tab") as QuestTab) ?? "journey";
-
-  const handleTabChange = (tab: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (tab === "journey") {
-      params.delete("tab");
-    } else {
-      params.set("tab", tab);
-    }
-    const qs = params.toString();
-    router.push(`/quests${qs ? `?${qs}` : ""}`);
-  };
 
   const currentEra = profile?.era ?? "initiate";
   const nextEra = getNextEra(currentEra);
@@ -93,7 +68,7 @@ export default function QuestsHero() {
             <br />
             your era.
           </h1>
-          <p className="max-w-[500px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+          <p className="max-w-[500px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
             Complete quests to earn Aura across six types. Journey quests guide
             your progression, weekly quests refresh every Monday, seasonal
             quests track the current anime season, and mastery quests reveal
@@ -105,11 +80,11 @@ export default function QuestsHero() {
         {profile && (
           <div className="flex max-w-full flex-col gap-2.5 md:max-w-[480px]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-aura-muted2">
+              <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/70">
                 {ERA_EMOJI[currentEra]} {getEraLabel(currentEra)}
               </span>
               {nextEra ? (
-                <span className="font-mono text-[11px] tracking-[0.15em] text-aura-muted">
+                <span className="font-mono text-[11px] tracking-[0.15em] text-white/50">
                   {auraToNext.toLocaleString()} Aura to{" "}
                   {ERA_EMOJI[nextEra]} {getEraLabel(nextEra)}
                 </span>
@@ -128,28 +103,11 @@ export default function QuestsHero() {
               />
             </div>
 
-            <span className="font-mono text-[10px] text-aura-muted">
+            <span className="font-mono text-[10px] text-white/40">
               {totalAura.toLocaleString()} total Aura
             </span>
           </div>
         )}
-
-        {/* Tab buttons */}
-        <div className="flex flex-wrap gap-2">
-          {QUEST_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={`rounded-full px-4 py-1.5 font-mono text-[12px] font-medium transition-all ${
-                activeTab === tab.key
-                  ? "bg-aura-orange text-white"
-                  : "bg-white/[0.05] text-aura-muted2 hover:bg-white/[0.1]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

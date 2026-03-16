@@ -322,7 +322,7 @@ export interface AniListSeasonalMedia {
 
 const SEASONAL_TRENDING_QUERY = `
   query ($season: MediaSeason, $seasonYear: Int) {
-    Page(perPage: 10) {
+    Page(perPage: 12) {
       media(season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC, format_in: [TV, TV_SHORT]) {
         id
         title { english romaji }
@@ -481,6 +481,60 @@ export async function fetchMediaByIdFull(id: number): Promise<AniListMediaFull |
     episodes: media.episodes,
     format: media.format,
   };
+}
+
+// --- Recommendations ---
+
+export interface AniListRecommendation {
+  id: number;
+  titleEnglish: string | null;
+  titleRomaji: string;
+  coverImageUrl: string | null;
+  rating: number;
+}
+
+const RECOMMENDATIONS_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: ANIME) {
+      recommendations(perPage: 8, sort: RATING_DESC) {
+        nodes {
+          rating
+          mediaRecommendation {
+            id
+            title { english romaji }
+            coverImage { large }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function fetchRecommendations(id: number): Promise<AniListRecommendation[]> {
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: RECOMMENDATIONS_QUERY, variables: { id } }),
+    next: { revalidate: 86400 },
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return [];
+  }
+
+  const json = await res.json();
+  const nodes = json.data?.Media?.recommendations?.nodes ?? [];
+
+  return nodes
+    .filter((n: { mediaRecommendation: unknown }) => n.mediaRecommendation != null)
+    .map((n: { rating: number; mediaRecommendation: { id: number; title: { english: string | null; romaji: string }; coverImage: { large: string | null } } }) => ({
+      id: n.mediaRecommendation.id,
+      titleEnglish: n.mediaRecommendation.title.english,
+      titleRomaji: n.mediaRecommendation.title.romaji,
+      coverImageUrl: n.mediaRecommendation.coverImage.large,
+      rating: n.rating,
+    }));
 }
 
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {

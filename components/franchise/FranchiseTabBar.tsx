@@ -3,10 +3,7 @@
 import { useState } from "react";
 import {
   ListOrdered,
-  Clock,
   MessageSquare,
-  Eye,
-  Compass,
   Pencil,
   X,
 } from "lucide-react";
@@ -15,10 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const tabs = [
   { id: "chronological", label: "Chronological Order", icon: ListOrdered },
-  { id: "release", label: "Release Order", icon: Clock },
   { id: "reviews", label: "Reviews", icon: MessageSquare },
-  { id: "predictions", label: "Predictions", icon: Eye },
-  { id: "similar", label: "Similar", icon: Compass },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -66,12 +60,15 @@ export default function FranchiseTabBar({
         </button>
       ))}
 
-      {/* Edit button — only visible to logged-in users */}
+      {/* Affiliate disclosure + Edit button */}
+      <span className="ml-auto font-body text-[10px] text-aura-muted/60">
+        Paid links on this page
+      </span>
       {user && (
         <button
           onClick={onEditClick}
           className={cn(
-            "ml-auto flex items-center gap-2.5 rounded-lg px-5 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors",
+            "flex items-center gap-2.5 rounded-lg px-5 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors",
             isEditing
               ? "bg-aura-orange"
               : "bg-[rgba(49,49,49,0.6)] hover:bg-[rgba(49,49,49,0.8)]",

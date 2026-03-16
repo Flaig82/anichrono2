@@ -1,6 +1,7 @@
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
+import SortTabs from "@/components/shared/SortTabs";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import ChroniclesHero from "@/components/layout/ChroniclesHero";
 import { createClient } from "@/lib/supabase-server";
@@ -20,6 +21,7 @@ interface FranchiseItem {
   updatedByHandle: string | null;
   updatedByAvatar: string | undefined;
   wasEdited: boolean;
+  obscurityScore: number | null;
 }
 
 async function getAllFranchises(): Promise<FranchiseItem[]> {
@@ -27,7 +29,7 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
 
   const { data: franchises } = await supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, obscurity_score, updated_at, created_at")
     .order("updated_at", { ascending: false });
 
   if (!franchises) return [];
@@ -52,7 +54,8 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       .from("entry")
       .select("franchise_id, entry_type")
       .in("franchise_id", franchiseIds)
-      .eq("is_removed", false),
+      .eq("is_removed", false)
+      .limit(10000),
     supabase
       .from("order_proposal")
       .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
@@ -104,6 +107,7 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
       updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
       wasEdited: !!editor,
+      obscurityScore: f.obscurity_score ?? null,
     };
   });
 }
@@ -137,10 +141,20 @@ function filterAndSort(
   }
 
   // Sort
-  const sort = (params.sort as string) ?? "updated";
+  const sort = (params.sort as string) ?? "alpha";
   switch (sort) {
     case "alpha":
       result.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case "popular":
+      // Lower obscurity score = more popular (0.5 mainstream → 4.0 obscure)
+      // Null scores go last, ties broken alphabetically
+      result.sort((a, b) => {
+        const aScore = a.obscurityScore ?? 99;
+        const bScore = b.obscurityScore ?? 99;
+        if (aScore !== bScore) return aScore - bScore;
+        return a.title.localeCompare(b.title);
+      });
       break;
     case "year":
       result.sort((a, b) => b.yearStarted - a.yearStarted);
@@ -149,8 +163,10 @@ function filterAndSort(
       result.sort((a, b) => b.entryCount - a.entryCount);
       break;
     case "updated":
-    default:
       // Already sorted by updated_at from the query
+      break;
+    default:
+      result.sort((a, b) => a.title.localeCompare(b.title));
       break;
   }
 
@@ -176,11 +192,14 @@ export default async function ChroniclesPage({ searchParams }: PageProps) {
         <ChroniclesHero franchiseCount={allFranchises.length} />
 
         <section className="flex flex-col gap-5">
-          <SectionLabel>
-            {franchises.length === allFranchises.length
-              ? "All Chronicles"
-              : `${franchises.length} result${franchises.length !== 1 ? "s" : ""}`}
-          </SectionLabel>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <SectionLabel>
+              {franchises.length === allFranchises.length
+                ? "All Chronicles"
+                : `${franchises.length} result${franchises.length !== 1 ? "s" : ""}`}
+            </SectionLabel>
+            <SortTabs />
+          </div>
           {franchises.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {franchises.map((franchise) => (

@@ -22,7 +22,7 @@ export default function PredictionsHero() {
           <br />
           of the season.
         </h1>
-        <p className="max-w-[460px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+        <p className="max-w-[460px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
           Head-to-head matchups, seasonal awards — your picks shape the community rankings.
         </p>
       </div>

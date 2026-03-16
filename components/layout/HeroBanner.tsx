@@ -43,7 +43,7 @@ function LoggedOutHero() {
             <br />
             journey, measured.
           </h1>
-          <p className="max-w-[433px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+          <p className="max-w-[433px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
             Track what you&apos;ve watched, build your Aura, and follow
             community-curated watch orders for every franchise.
           </p>
@@ -115,7 +115,7 @@ function LoggedInHero() {
           <h1 className="font-body text-[28px] font-bold leading-none tracking-[-0.56px] text-white md:text-[36px] md:tracking-[-0.72px] lg:text-[48px] lg:tracking-[-0.96px]">
             Winter 2026 is live.
           </h1>
-          <p className="max-w-[433px] font-body text-sm leading-[1.62] tracking-[-0.14px] text-white">
+          <p className="max-w-[433px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
             12 shows airing. Oracle predictions lock at Episode 6.
             <br />
             Welcome back, {displayName}.

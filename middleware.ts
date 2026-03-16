@@ -29,6 +29,16 @@ export async function middleware(request: NextRequest) {
   // Refresh session — do NOT use getSession() here, getUser() validates server-side
   await supabase.auth.getUser();
 
+  // Set cookie consent flag for non-US visitors (Vercel provides geo data)
+  const country = request.geo?.country;
+  if (country && country !== "US") {
+    supabaseResponse.cookies.set("needs-cookie-consent", "1", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
+
   return supabaseResponse;
 }
 
