@@ -101,7 +101,7 @@ export default function AdminProposalsPage() {
           Proposal Approval Queue
         </h1>
         <p className="mt-1 font-body text-[13px] tracking-[-0.26px] text-aura-muted2">
-          Proposals that reached the vote threshold and need admin review.
+          All open and pending proposals. Admins can approve or reject without waiting for votes.
         </p>
       </div>
 
@@ -136,8 +136,12 @@ export default function AdminProposalsPage() {
                     <span className="font-body text-[14px] font-bold tracking-[-0.28px] text-white truncate">
                       {proposal.title}
                     </span>
-                    <span className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-0.5 font-mono text-[10px] tracking-[0.15em] text-aura-muted2">
-                      +{proposal.vote_score} votes
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[10px] tracking-[0.15em] ${
+                      proposal.status === "pending_approval"
+                        ? "bg-amber-500/15 text-amber-400"
+                        : "bg-white/[0.08] text-aura-muted2"
+                    }`}>
+                      {proposal.status === "pending_approval" ? "pending" : "open"} · {proposal.vote_score >= 0 ? "+" : ""}{proposal.vote_score} votes
                     </span>
                   </div>
                   <div className="flex items-center gap-2 font-body text-[11px] text-white/50">

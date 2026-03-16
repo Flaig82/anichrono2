@@ -68,9 +68,9 @@ export async function POST(
     return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
   }
 
-  if (proposal.status !== "pending_approval") {
+  if (proposal.status !== "pending_approval" && proposal.status !== "open") {
     return NextResponse.json(
-      { error: "Proposal is not pending approval" },
+      { error: "Proposal is not open or pending approval" },
       { status: 400 },
     );
   }

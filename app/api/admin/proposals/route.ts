@@ -43,7 +43,7 @@ export async function GET() {
       author:author_id (display_name, handle, avatar_url, era)
     `,
     )
-    .eq("status", "pending_approval")
+    .in("status", ["open", "pending_approval"])
     .order("updated_at", { ascending: false });
 
   if (error) {
