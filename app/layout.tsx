@@ -23,7 +23,12 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://animechrono.com"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "https://animechrono.com"),
+  ),
   title: {
     default: "AnimeChrono — Your anime journey, measured.",
     template: "%s — AnimeChrono",
