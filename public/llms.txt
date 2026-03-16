@@ -1,0 +1,46 @@
+# AnimeChrono
+
+> Community-curated anime watch orders and engagement platform.
+
+AnimeChrono provides the definitive chronological and recommended watch orders for anime franchises. Each franchise has a master watch order maintained by the community, with numbered entries showing exactly when to watch movies, OVAs, ONAs, and specials between episode blocks.
+
+## Key Pages
+
+- Homepage: https://animechrono.com
+- Chronicles (browse all franchises): https://animechrono.com/chronicles
+- Discover (search anime): https://animechrono.com/discover
+- Franchise watch order pages: https://animechrono.com/franchise/{slug}
+
+## What You'll Find
+
+- **Watch orders for 194+ anime franchises** — each page shows the complete chronological viewing order, including where to insert movies, OVAs, and specials between episode blocks
+- **Entry types**: episodes, movies, OVAs, ONAs, specials, manga — each labeled by type
+- **Community-maintained** — orders are proposed, voted on, and refined by the community
+- **Essential vs optional markers** — entries are flagged as essential or skippable for newcomers
+
+## Popular Franchises
+
+- Naruto: https://animechrono.com/franchise/naruto
+- One Piece: https://animechrono.com/franchise/one-piece
+- Dragon Ball: https://animechrono.com/franchise/dragon-ball
+- Bleach: https://animechrono.com/franchise/bleach
+- Attack on Titan: https://animechrono.com/franchise/attack-on-titan
+- Jujutsu Kaisen: https://animechrono.com/franchise/jujutsu-kaisen
+- Demon Slayer: https://animechrono.com/franchise/demon-slayer
+- My Hero Academia: https://animechrono.com/franchise/my-hero-academia
+- Fullmetal Alchemist: https://animechrono.com/franchise/fullmetal-alchemist
+- Sword Art Online: https://animechrono.com/franchise/sword-art-online
+- Fate: https://animechrono.com/franchise/fate
+- Monogatari: https://animechrono.com/franchise/monogatari
+- JoJo's Bizarre Adventure: https://animechrono.com/franchise/jojos-bizarre-adventure
+- Gundam: https://animechrono.com/franchise/gundam
+- Evangelion: https://animechrono.com/franchise/evangelion
+- Fairy Tail: https://animechrono.com/franchise/fairy-tail
+- Hunter x Hunter: https://animechrono.com/franchise/hunter-x-hunter
+- Spy x Family: https://animechrono.com/franchise/spy-x-family
+- Chainsaw Man: https://animechrono.com/franchise/chainsaw-man
+- Cowboy Bebop: https://animechrono.com/franchise/cowboy-bebop
+
+## Sitemap
+
+https://animechrono.com/sitemap.xml
