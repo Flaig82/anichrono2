@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { BookOpen, Compass, Eye, Swords, LogOut, Shield, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { BookOpen, Compass, Eye, Swords, LogOut, Shield, Settings, Search, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -19,7 +20,42 @@ const authNavLinks = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, profile, isLoading, logout } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input when search opens
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  // Close search on Escape
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && searchOpen) {
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
+      // Cmd/Ctrl+K to open search
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [searchOpen]);
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    setSearchOpen(false);
+    setSearchQuery("");
+  }
 
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-8 lg:px-[120px] py-3">
@@ -92,6 +128,41 @@ export default function Nav() {
             <span className="hidden md:inline">Admin</span>
           </Link>
         )}
+
+        {/* Search */}
+        {searchOpen ? (
+          <form onSubmit={handleSearchSubmit} className="flex items-center">
+            <div className="flex items-center gap-2 rounded-lg bg-[rgba(49,49,49,0.6)] px-3 py-2.5 backdrop-blur-[10px]">
+              <Search size={14} className="shrink-0 text-aura-muted" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search anime..."
+                className="w-[160px] bg-transparent font-body text-[13px] tracking-[-0.26px] text-white placeholder:text-aura-muted outline-none md:w-[240px]"
+              />
+              <button
+                type="button"
+                onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+                className="shrink-0 text-aura-muted transition-colors hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2.5 rounded-lg bg-[rgba(49,49,49,0.6)] px-3 py-2.5 font-body text-[14px] tracking-[-0.28px] text-aura-muted backdrop-blur-[10px] transition-colors hover:bg-[rgba(49,49,49,0.8)] hover:text-white"
+          >
+            <Search size={16} />
+            <span className="hidden md:inline">Search</span>
+            <kbd className="hidden rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-aura-muted md:inline">
+              ⌘K
+            </kbd>
+          </button>
+        )}
       </div>
 
       {/* Right: Auth state */}
@@ -126,6 +197,13 @@ export default function Nav() {
               <span className="hidden font-body text-[14px] font-bold tracking-[-0.28px] text-white md:inline">
                 {profile.display_name}
               </span>
+            </Link>
+            <Link
+              href="/feedback"
+              className="text-aura-muted transition-colors hover:text-white"
+              title="Send Feedback"
+            >
+              <MessageSquare size={16} />
             </Link>
             <Link
               href="/settings"

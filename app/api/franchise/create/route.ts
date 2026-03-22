@@ -4,6 +4,7 @@ import { createFranchiseSchema } from "@/lib/validations/franchise";
 import { awardAura } from "@/lib/aura";
 import { generateSlug } from "@/lib/utils";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { checkFieldsForProfanity } from "@/lib/profanity";
 import { NextResponse } from "next/server";
 
 const franchiseCreateLimiter = createRateLimiter("franchise-create", {
@@ -61,6 +62,24 @@ export async function POST(request: Request) {
   }
 
   const data = result.data;
+
+  // Profanity check on franchise title, description, and all entry titles/notes
+  const profanityFields: Record<string, string | null | undefined> = {
+    title: data.title,
+    description: data.description,
+  };
+  for (const entry of data.entries) {
+    profanityFields[`entry "${entry.title}"`] = entry.title;
+    profanityFields[`curator note for "${entry.title}"`] = entry.curator_note;
+  }
+  const profaneField = checkFieldsForProfanity(profanityFields);
+  if (profaneField) {
+    return NextResponse.json(
+      { error: `Inappropriate language detected in ${profaneField}` },
+      { status: 400 },
+    );
+  }
+
   const service = createServiceClient();
 
   // Check anilist_id isn't already claimed

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { updateProfileSchema } from "@/lib/validations/profile";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { checkFieldsForProfanity } from "@/lib/profanity";
 
 const profileLimiter = createRateLimiter("profile-update", {
   burstLimit: 10,
@@ -35,6 +36,19 @@ export async function PATCH(request: Request) {
   }
 
   const updates = parsed.data;
+
+  // Profanity check on display name, handle, and bio
+  const profaneField = checkFieldsForProfanity({
+    display_name: updates.display_name,
+    handle: updates.handle,
+    bio: updates.bio,
+  });
+  if (profaneField) {
+    return NextResponse.json(
+      { error: `Inappropriate language detected in ${profaneField}` },
+      { status: 400 },
+    );
+  }
 
   // If handle is being changed, check uniqueness
   if (updates.handle) {

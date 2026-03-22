@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import SettingsForm from "@/components/profile/SettingsForm";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +55,15 @@ export default function SettingsPage() {
 
         {/* Form */}
         <SettingsForm />
+
+        {/* Feedback link */}
+        <Link
+          href="/feedback"
+          className="flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.07)] bg-aura-bg2 px-4 py-3 font-body text-sm text-aura-muted2 transition-colors hover:border-[rgba(255,255,255,0.13)] hover:text-white"
+        >
+          <MessageSquare size={16} />
+          Send Feedback
+        </Link>
       </div>
     </main>
   );

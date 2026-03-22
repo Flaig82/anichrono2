@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase-server";
 import { createProposalSchema } from "@/lib/validations/proposal";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { checkFieldsForProfanity } from "@/lib/profanity";
 import { NextResponse } from "next/server";
 
 const proposalCreateLimiter = createRateLimiter("proposal-create", {
@@ -117,6 +118,23 @@ export async function POST(
   if (!result.success) {
     return NextResponse.json(
       { error: result.error.issues[0]?.message ?? "Invalid input" },
+      { status: 400 },
+    );
+  }
+
+  // Profanity check on proposal title, description, and all entry titles/notes
+  const profanityFields: Record<string, string | null | undefined> = {
+    title: result.data.title,
+    description: result.data.description,
+  };
+  for (const entry of result.data.proposed_entries) {
+    profanityFields[`entry "${entry.title}"`] = entry.title;
+    profanityFields[`curator note for "${entry.title}"`] = entry.curator_note;
+  }
+  const profaneField = checkFieldsForProfanity(profanityFields);
+  if (profaneField) {
+    return NextResponse.json(
+      { error: `Inappropriate language detected in ${profaneField}` },
       { status: 400 },
     );
   }
