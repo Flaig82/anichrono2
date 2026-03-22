@@ -89,7 +89,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
           {/* Value props */}
           <div className="flex flex-col gap-3 text-center">
             <h2 className="font-brand text-xl font-bold text-white">
-              Join AnimeChrono to vote
+              Join AnimeChrono
             </h2>
             <ul className="flex flex-col gap-1.5 text-left">
               <li className="font-body text-[13px] text-aura-muted2">

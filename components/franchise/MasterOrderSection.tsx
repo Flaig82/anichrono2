@@ -15,6 +15,7 @@ import FranchiseReviews from "./FranchiseReviews";
 import RightSidebar from "@/components/layout/RightSidebar";
 import RelationsSidebar from "./RelationsSidebar";
 import SimilarAnime from "./SimilarAnime";
+import AuthModal from "@/components/shared/AuthModal";
 
 interface EntryGroupData {
   parentSeries: string;
@@ -51,6 +52,7 @@ export default function MasterOrderSection({
   const [activeTab, setActiveTab] = useState<string>("chronological");
   const [isEditing, setIsEditing] = useState(false);
   const [showEraGate, setShowEraGate] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [editorAnilistIds, setEditorAnilistIds] = useState<Set<number>>(new Set());
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -58,9 +60,13 @@ export default function MasterOrderSection({
 
   const onWatch = useCallback(
     (entryId: string, value: number) => {
+      if (!user) {
+        setShowAuthModal(true);
+        return;
+      }
       updateWatch(entryId, value);
     },
-    [updateWatch],
+    [user, updateWatch],
   );
 
   // AniList IDs from the saved/initial entries
@@ -90,7 +96,7 @@ export default function MasterOrderSection({
 
   function handleEditClick() {
     if (!user) {
-      router.push("/login");
+      setShowAuthModal(true);
       return;
     }
     if (profile?.era === "initiate") {
@@ -120,6 +126,11 @@ export default function MasterOrderSection({
           bannerImageUrl={heroBannerImageUrl}
           genres={heroGenres}
         />
+
+        {/* Auth modal for logged-out users */}
+        {showAuthModal && (
+          <AuthModal onClose={() => setShowAuthModal(false)} />
+        )}
 
         {/* Era gate dialog */}
         {showEraGate && (
@@ -190,8 +201,8 @@ export default function MasterOrderSection({
                   status={franchiseStatus}
                   entryType={group.entries[0]?.entry_type ?? "episodes"}
                   entries={group.entries}
-                  watchMap={user ? watchMap : undefined}
-                  onWatch={user ? onWatch : undefined}
+                  watchMap={watchMap}
+                  onWatch={onWatch}
                 />
               ))}
             </div>

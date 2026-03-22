@@ -170,16 +170,10 @@ export default function EntryRow({
 
   function handleClick() {
     if (isEpisodeBlock) {
-      setAndSync(isComplete ? 0 : watched + 1);
+      setAndSync(isComplete ? 0 : totalEpisodes);
     } else {
       setAndSync(isComplete ? 0 : 1);
     }
-  }
-
-  function handleContextMenu(e: React.MouseEvent) {
-    if (!isEpisodeBlock) return;
-    e.preventDefault();
-    setAndSync(isComplete ? 0 : totalEpisodes);
   }
 
   function handleDecrement() {
@@ -200,13 +194,12 @@ export default function EntryRow({
       {/* Progress ring / checkbox — consistent left side for all rows */}
       <button
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         className="shrink-0 transition-transform hover:scale-110"
         title={
           isEpisodeBlock
             ? isComplete
               ? "Reset progress"
-              : "Click to increment · Right-click to complete all"
+              : "Mark all watched"
             : isComplete
               ? "Mark unwatched"
               : "Mark watched"
