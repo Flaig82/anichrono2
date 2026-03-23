@@ -58,7 +58,8 @@ export default function Nav() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-8 lg:px-[120px] py-3">
+    <nav className="relative isolate sticky top-0 z-50 px-4 md:px-8 lg:px-[120px] py-3 bg-gradient-to-b from-[rgba(10,10,12,0.9)] to-transparent before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:backdrop-blur-[10px] before:[mask-image:linear-gradient(to_bottom,black,transparent)] after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:backdrop-blur-[100px] after:[mask-image:linear-gradient(to_bottom,black_0%,transparent_50%)]">
+      <div className="relative z-10 flex items-center justify-between">
       {/* Left: Logo + Nav pills */}
       <div className="flex items-center gap-2 md:gap-4">
         {/* Logo */}
@@ -238,6 +239,7 @@ export default function Nav() {
             </Link>
           </>
         )}
+      </div>
       </div>
     </nav>
   );
