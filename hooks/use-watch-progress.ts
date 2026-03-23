@@ -22,6 +22,7 @@ export function useWatchProgress(franchiseId: string) {
   const { data, error, isLoading, mutate } = useSWR<Record<string, WatchData>>(
     user ? `/api/user/watch?franchise_id=${franchiseId}` : null,
     fetcher,
+    { revalidateOnFocus: false },
   );
 
   const watchMap = new Map<string, WatchData>(

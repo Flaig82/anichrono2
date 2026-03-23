@@ -97,15 +97,18 @@ export async function GET(
     .order("created_at", { ascending: false })
     .limit(10);
 
-  return NextResponse.json({
-    profile,
-    aura: (auraRows ?? []) as AuraRow[],
-    stats: {
-      completed: completedCount ?? 0,
-      watching: watchingCount ?? 0,
-      dropped: droppedCount ?? 0,
-      reviews: reviewCount ?? 0,
+  return NextResponse.json(
+    {
+      profile,
+      aura: (auraRows ?? []) as AuraRow[],
+      stats: {
+        completed: completedCount ?? 0,
+        watching: watchingCount ?? 0,
+        dropped: droppedCount ?? 0,
+        reviews: reviewCount ?? 0,
+      },
+      activity: activity ?? [],
     },
-    activity: activity ?? [],
-  });
+    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" } },
+  );
 }

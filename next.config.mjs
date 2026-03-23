@@ -1,5 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [
+      {
+        // Static assets in /public (SVGs, PNGs, fonts)
+        source: "/:path*.(svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=604800, immutable" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       // === Exception redirects (slug mismatches) ===

@@ -40,6 +40,7 @@ export function usePublicProfile(handle: string | null) {
   const { data, error, isLoading } = useSWR<PublicProfileResponse>(
     handle ? `/api/user/${handle}` : null,
     fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
   );
 
   return {

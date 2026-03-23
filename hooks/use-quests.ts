@@ -13,6 +13,7 @@ export function useQuests(category?: QuestCategory) {
   const { data, error, isLoading, mutate } = useSWR<QuestWithProgress[]>(
     user ? `/api/quest${params}` : null,
     fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
   );
 
   return {

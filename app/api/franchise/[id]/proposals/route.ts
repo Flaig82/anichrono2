@@ -56,7 +56,9 @@ export async function GET(
     user_vote: userVotes[p.id] ?? null,
   }));
 
-  return NextResponse.json(enriched);
+  return NextResponse.json(enriched, {
+    headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=15" },
+  });
 }
 
 /** POST /api/franchise/[id]/proposals — create a new proposal */

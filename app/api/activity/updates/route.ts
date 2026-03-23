@@ -144,5 +144,7 @@ export async function GET() {
     user_liked: userLikedSet.has(item.id),
   }));
 
-  return NextResponse.json(enriched);
+  return NextResponse.json(enriched, {
+    headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=30" },
+  });
 }

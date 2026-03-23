@@ -7,12 +7,13 @@ export async function GET() {
 
   const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 
-  // Get distinct users who have activity in the last 15 minutes
+  // Get recent activity — limit to 100 rows, enough to find active users
   const { data, error } = await supabase
     .from("activity")
     .select("user_id, user:users!user_id(avatar_url, display_name)")
     .gte("created_at", fifteenMinAgo)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) {
     return NextResponse.json({ count: 0, users: [] });

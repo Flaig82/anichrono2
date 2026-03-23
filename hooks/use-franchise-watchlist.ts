@@ -21,6 +21,7 @@ export function useFranchiseWatchlist(franchiseId: string) {
   const { data, error, isLoading, mutate } = useSWR<WatchlistStatusResponse>(
     user ? `/api/user/watchlist/status?franchise_id=${franchiseId}` : null,
     fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60_000 },
   );
 
   const status = data?.status ?? null;

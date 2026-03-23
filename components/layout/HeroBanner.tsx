@@ -21,7 +21,8 @@ interface OnlineStats {
 
 function LoggedOutHero() {
   const { data } = useSWR<OnlineStats>("/api/stats/online", statsFetcher, {
-    refreshInterval: 60_000,
+    refreshInterval: 120_000,
+    dedupingInterval: 60_000,
   });
   const onlineCount = data?.count ?? 0;
   const onlineUsers = data?.users ?? [];
@@ -95,7 +96,8 @@ function LoggedInHero() {
   const profile = useAuth((s) => s.profile);
   const displayName = profile?.display_name ?? "there";
   const { data } = useSWR<OnlineStats>("/api/stats/online", statsFetcher, {
-    refreshInterval: 60_000,
+    refreshInterval: 120_000,
+    dedupingInterval: 60_000,
   });
   const onlineCount = data?.count ?? 0;
   const onlineUsers = data?.users ?? [];

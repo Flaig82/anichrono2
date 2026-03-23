@@ -24,6 +24,7 @@ export function useWatchlist(
   const { data, error, isLoading } = useSWR<WatchlistResponse>(
     handle ? `/api/user/${handle}/watchlist?${params}` : null,
     fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 120_000 },
   );
 
   return {
