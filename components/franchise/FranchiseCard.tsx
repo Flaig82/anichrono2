@@ -55,6 +55,8 @@ export default function FranchiseCard({
             alt={title}
             fill
             className="object-cover"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            quality={60}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-aura-muted/30 to-aura-bg3" />

@@ -62,6 +62,7 @@ export default function SimilarAnime({
                       fill
                       className="object-cover"
                       sizes="34px"
+                      quality={60}
                     />
                   ) : (
                     <div className="h-full w-full bg-gradient-to-br from-aura-muted/20 to-aura-bg3" />

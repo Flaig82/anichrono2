@@ -211,7 +211,7 @@ function UpdateCard({
         {/* Poster thumbnail */}
         {item.poster && (
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-            <Image src={item.poster} alt="" fill className="object-cover" />
+            <Image src={item.poster} alt="" fill className="object-cover" quality={60} sizes="48px" />
           </div>
         )}
       </div>

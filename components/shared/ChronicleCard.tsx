@@ -36,7 +36,7 @@ export default function ChronicleCard({
 
       {/* Banner */}
       <div className="relative h-[150px] w-full overflow-hidden rounded-lg">
-        <Image src={bannerSrc} alt={title} fill className="object-cover" />
+        <Image src={bannerSrc} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" quality={60} />
       </div>
 
       {/* Body */}

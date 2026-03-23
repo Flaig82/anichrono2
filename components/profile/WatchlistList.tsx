@@ -84,6 +84,7 @@ export default function WatchlistList({ items, isLoading }: WatchlistListProps) 
                     fill
                     className="object-cover"
                     sizes="28px"
+                    quality={60}
                   />
                 ) : null}
               </div>

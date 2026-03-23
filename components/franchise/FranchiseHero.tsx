@@ -73,6 +73,8 @@ export default function FranchiseHero({
               alt={title}
               fill
               className="object-cover"
+              sizes="100vw"
+              quality={65}
               priority
             />
           ) : (

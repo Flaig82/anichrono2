@@ -189,6 +189,7 @@ export default function AwardCard({ award, isFromDb }: AwardCardProps) {
                     fill
                     className="object-cover"
                     sizes="38px"
+                    quality={60}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-aura-bg3">

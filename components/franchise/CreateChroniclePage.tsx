@@ -94,6 +94,8 @@ export default function CreateChroniclePage({
                     alt={title}
                     fill
                     className="object-cover"
+                    sizes="100vw"
+                    quality={65}
                     priority
                   />
                 ) : (
@@ -161,6 +163,8 @@ export default function CreateChroniclePage({
                     alt={matchedFranchise.title}
                     fill
                     className="object-cover"
+                    sizes="100vw"
+                    quality={60}
                   />
                 ) : (
                   <div className="h-full w-full bg-gradient-to-br from-blue-900/40 to-aura-bg" />

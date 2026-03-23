@@ -69,7 +69,8 @@ export default function EntryGroup({
               alt={parentSeries}
               fill
               className="object-cover"
-              sizes="100px"
+              sizes="(max-width: 640px) 57px, 100px"
+              quality={60}
             />
           ) : (
             <div className="h-full w-full bg-gradient-to-br from-aura-muted/20 to-aura-bg3" />

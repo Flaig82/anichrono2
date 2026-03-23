@@ -39,6 +39,7 @@ function BracketSlot({
             fill
             className="object-cover"
             sizes="32px"
+            quality={60}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-aura-bg3 text-[7px] text-aura-muted">

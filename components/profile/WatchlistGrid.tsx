@@ -64,6 +64,7 @@ export default function WatchlistGrid({ items, isLoading }: WatchlistGridProps) 
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                   sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
+                  quality={60}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center p-2">

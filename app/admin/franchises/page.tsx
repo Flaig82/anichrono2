@@ -144,6 +144,7 @@ export default function AdminFranchisesPage() {
                         width={32}
                         height={44}
                         className="shrink-0 rounded object-cover"
+                        quality={60}
                       />
                     ) : (
                       <div className="h-[44px] w-[32px] shrink-0 rounded bg-aura-bg4" />

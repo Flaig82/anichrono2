@@ -49,7 +49,7 @@ function PosterCard({ src, alt, score, href, anilistId }: PosterCardProps) {
         ref={canvasRef}
         className="pointer-events-none absolute inset-0 z-10 rounded-xl"
       />
-      <Image src={src} alt={alt} fill className="object-cover" />
+      <Image src={src} alt={alt} fill className="object-cover" quality={60} sizes="(max-width: 640px) 33vw, 150px" />
 
       {/* Unclaimed badge */}
       {!hasChronicle && (

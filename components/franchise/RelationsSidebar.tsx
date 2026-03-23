@@ -366,6 +366,7 @@ function DraggableCard({
             fill
             className="pointer-events-none object-cover"
             sizes="40px"
+            quality={60}
             draggable={false}
           />
         ) : (
