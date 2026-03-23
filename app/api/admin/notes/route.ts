@@ -38,9 +38,11 @@ export async function GET() {
   const { data: notes, error } = await service
     .from("admin_notes")
     .select(
-      `id, body, created_at, author_id,
-      author:author_id (display_name, avatar_url)`,
+      `id, body, is_completed, completed_at, completed_by, created_at, author_id,
+      author:author_id (display_name, avatar_url),
+      completer:completed_by (display_name)`,
     )
+    .order("is_completed", { ascending: true })
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -90,8 +92,9 @@ export async function POST(request: NextRequest) {
     .from("admin_notes")
     .insert({ author_id: user.id, body: parsed.data.body })
     .select(
-      `id, body, created_at, author_id,
-      author:author_id (display_name, avatar_url)`,
+      `id, body, is_completed, completed_at, completed_by, created_at, author_id,
+      author:author_id (display_name, avatar_url),
+      completer:completed_by (display_name)`,
     )
     .single();
 

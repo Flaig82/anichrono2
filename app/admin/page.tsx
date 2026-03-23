@@ -9,16 +9,22 @@ import {
   Film,
   FileText,
   TrendingUp,
-  MessageSquare,
+  CheckSquare,
   Trash2,
+  Check,
+  Circle,
 } from "lucide-react";
 
-interface AdminNote {
+interface AdminTodo {
   id: string;
   body: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  completed_by: string | null;
   created_at: string;
   author_id: string;
   author: { display_name: string | null; avatar_url: string | null };
+  completer: { display_name: string | null } | null;
 }
 
 interface StatsData {
@@ -86,14 +92,15 @@ function AvatarFallback({ name, size = 28 }: { name: string; size?: number }) {
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [notes, setNotes] = useState<AdminNote[]>([]);
-  const [noteBody, setNoteBody] = useState("");
-  const [postingNote, setPostingNote] = useState(false);
+  const [todos, setTodos] = useState<AdminTodo[]>([]);
+  const [todoBody, setTodoBody] = useState("");
+  const [postingTodo, setPostingTodo] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const fetchNotes = useCallback(async () => {
+  const fetchTodos = useCallback(async () => {
     const res = await fetch("/api/admin/notes");
     if (res.ok) {
-      setNotes(await res.json());
+      setTodos(await res.json());
     }
   }, []);
 
@@ -106,30 +113,50 @@ export default function AdminOverviewPage() {
       setIsLoading(false);
     }
     fetchStats();
-    fetchNotes();
-  }, [fetchNotes]);
+    fetchTodos();
+  }, [fetchTodos]);
 
-  async function postNote() {
-    const trimmed = noteBody.trim();
-    if (!trimmed || postingNote) return;
-    setPostingNote(true);
+  async function addTodo() {
+    const trimmed = todoBody.trim();
+    if (!trimmed || postingTodo) return;
+    setPostingTodo(true);
     const res = await fetch("/api/admin/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: trimmed }),
     });
     if (res.ok) {
-      const note: AdminNote = await res.json();
-      setNotes((prev) => [note, ...prev]);
-      setNoteBody("");
+      const todo: AdminTodo = await res.json();
+      setTodos((prev) => [todo, ...prev]);
+      setTodoBody("");
     }
-    setPostingNote(false);
+    setPostingTodo(false);
   }
 
-  async function deleteNote(id: string) {
+  async function toggleTodo(id: string) {
+    if (togglingId) return;
+    setTogglingId(id);
+    const res = await fetch(`/api/admin/notes/${id}`, { method: "PATCH" });
+    if (res.ok) {
+      const updated: AdminTodo = await res.json();
+      setTodos((prev) => {
+        const filtered = prev.filter((t) => t.id !== id);
+        // Insert into correct position: incomplete first, then completed
+        const incomplete = filtered.filter((t) => !t.is_completed);
+        const completed = filtered.filter((t) => t.is_completed);
+        if (updated.is_completed) {
+          return [...incomplete, updated, ...completed];
+        }
+        return [updated, ...incomplete, ...completed];
+      });
+    }
+    setTogglingId(null);
+  }
+
+  async function deleteTodo(id: string) {
     const res = await fetch(`/api/admin/notes/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setNotes((prev) => prev.filter((n) => n.id !== id));
+      setTodos((prev) => prev.filter((t) => t.id !== id));
     }
   }
 
@@ -342,92 +369,106 @@ export default function AdminOverviewPage() {
           </div>
         </div>
 
-        {/* Admin Notes */}
+        {/* To-Do */}
         <div className="relative overflow-hidden rounded-xl bg-aura-bg3 p-5">
           <PatternOverlay />
           <div className="relative">
             <div className="flex items-center gap-2 mb-5">
-              <MessageSquare size={14} className="text-aura-orange" />
+              <CheckSquare size={14} className="text-aura-orange" />
               <h2
                 className="font-brand text-sm font-bold tracking-tight text-white"
                 style={{ textShadow: "0 0 12px rgba(235, 99, 37, 0.5)" }}
               >
-                Admin Notes
+                To-Do
               </h2>
             </div>
 
-            {/* Compose */}
+            {/* Add task */}
             <div className="mb-5">
               <textarea
-                value={noteBody}
-                onChange={(e) => setNoteBody(e.target.value)}
-                placeholder="Leave a note for the team..."
+                value={todoBody}
+                onChange={(e) => setTodoBody(e.target.value)}
+                placeholder="Add a task..."
                 maxLength={2000}
-                rows={3}
+                rows={2}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    addTodo();
+                  }
+                }}
                 className="w-full resize-none rounded-lg border border-aura-border bg-aura-bg2 px-3 py-2 font-body text-[13px] tracking-[-0.26px] text-white placeholder:text-aura-muted focus:border-aura-orange/50 focus:outline-none"
               />
               <div className="mt-2 flex items-center justify-between">
                 <span className="font-mono text-[10px] text-aura-muted">
-                  {noteBody.length}/2000
+                  {todoBody.length}/2000
                 </span>
                 <button
-                  onClick={postNote}
-                  disabled={!noteBody.trim() || postingNote}
+                  onClick={addTodo}
+                  disabled={!todoBody.trim() || postingTodo}
                   className="rounded-lg bg-aura-orange px-4 py-1.5 font-body text-[12px] font-bold tracking-[-0.12px] text-white transition-opacity disabled:opacity-40"
                 >
-                  {postingNote ? "Posting..." : "Post Note"}
+                  {postingTodo ? "Adding..." : "Add Task"}
                 </button>
               </div>
             </div>
 
-            {/* Notes list */}
+            {/* Task list */}
             <div className="flex flex-col">
-              {notes.map((n, i) => (
-                <div key={n.id}>
+              {todos.map((t, i) => (
+                <div key={t.id}>
                   <div className="flex items-start gap-3 py-3">
-                    {n.author?.avatar_url ? (
-                      <Image
-                        src={n.author.avatar_url}
-                        alt={n.author.display_name ?? ""}
-                        width={28}
-                        height={28}
-                        className="mt-0.5 rounded-full object-cover"
-                      />
-                    ) : (
-                      <AvatarFallback
-                        name={n.author?.display_name ?? "?"}
-                        size={28}
-                      />
-                    )}
+                    <button
+                      onClick={() => toggleTodo(t.id)}
+                      disabled={togglingId === t.id}
+                      className="mt-0.5 shrink-0 transition-colors disabled:opacity-50"
+                      title={t.is_completed ? "Mark incomplete" : "Mark complete"}
+                    >
+                      {t.is_completed ? (
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-aura-orange">
+                          <Check size={12} className="text-white" />
+                        </div>
+                      ) : (
+                        <Circle size={20} className="text-aura-muted transition-colors hover:text-aura-orange" />
+                      )}
+                    </button>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-body text-[13px] font-bold tracking-[-0.26px] text-white">
-                          {n.author?.display_name ?? "Unknown"}
-                        </span>
-                        <span className="font-mono text-[10px] text-aura-muted">
-                          {formatRelativeTime(n.created_at)}
-                        </span>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap font-body text-[13px] leading-relaxed tracking-[-0.26px] text-aura-muted2">
-                        {n.body}
+                      <p
+                        className={`whitespace-pre-wrap font-body text-[13px] leading-relaxed tracking-[-0.26px] ${
+                          t.is_completed
+                            ? "text-aura-muted line-through"
+                            : "text-white"
+                        }`}
+                      >
+                        {t.body}
                       </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-aura-muted">
+                          {t.author?.display_name ?? "Unknown"} &middot; {formatRelativeTime(t.created_at)}
+                        </span>
+                        {t.is_completed && t.completer && (
+                          <span className="font-mono text-[10px] text-aura-muted">
+                            &middot; Done by {t.completer.display_name ?? "Unknown"} {t.completed_at ? formatRelativeTime(t.completed_at) : ""}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
-                      onClick={() => deleteNote(n.id)}
+                      onClick={() => deleteTodo(t.id)}
                       className="mt-1 shrink-0 rounded p-1 text-aura-muted transition-colors hover:bg-white/5 hover:text-red-400"
-                      title="Delete note"
+                      title="Delete task"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
-                  {i < notes.length - 1 && (
+                  {i < todos.length - 1 && (
                     <div className="h-px bg-white/[0.06]" />
                   )}
                 </div>
               ))}
-              {notes.length === 0 && (
+              {todos.length === 0 && (
                 <p className="py-6 text-center font-body text-[12px] text-aura-muted">
-                  No notes yet. Be the first to leave one.
+                  No tasks yet. Add one above.
                 </p>
               )}
             </div>
