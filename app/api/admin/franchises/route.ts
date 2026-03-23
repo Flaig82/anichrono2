@@ -31,49 +31,39 @@ export async function GET(request: NextRequest) {
   // Use service client to bypass any RLS for aggregation
   const service = createServiceClient();
 
-  // Fetch franchises with entry counts
+  // Single query with embedded count joins — no JS aggregation needed
   const { data: franchises, error: fError } = await service
     .from("franchise")
-    .select("id, title, slug, cover_image_url, status, created_at");
+    .select(
+      "id, title, slug, cover_image_url, status, created_at, entry(count), order_proposal(count)",
+    );
 
   if (fError) {
     return NextResponse.json({ error: fError.message }, { status: 500 });
   }
 
-  // Get entry counts per franchise
-  const { data: entryCounts } = await service
-    .from("franchise_entry")
-    .select("franchise_id")
-    .not("deleted_at", "is", null)
-    .is("deleted_at", null);
-
-  // Count entries per franchise
-  const entryCountMap: Record<string, number> = {};
-  if (entryCounts) {
-    for (const e of entryCounts) {
-      entryCountMap[e.franchise_id] =
-        (entryCountMap[e.franchise_id] || 0) + 1;
-    }
-  }
-
-  // Get proposal counts per franchise
-  const { data: proposalCounts } = await service
-    .from("order_proposal")
-    .select("franchise_id, status");
-
-  const proposalCountMap: Record<string, number> = {};
-  if (proposalCounts) {
-    for (const p of proposalCounts) {
-      proposalCountMap[p.franchise_id] =
-        (proposalCountMap[p.franchise_id] || 0) + 1;
-    }
-  }
-
-  // Merge and sort
-  const enriched = (franchises ?? []).map((f) => ({
-    ...f,
-    entry_count: entryCountMap[f.id] ?? 0,
-    proposal_count: proposalCountMap[f.id] ?? 0,
+  // Flatten embedded counts and sort
+  // Cast needed: service client is untyped, embedded count joins resolve to `never`
+  type FranchiseWithCounts = {
+    id: string;
+    title: string;
+    slug: string;
+    cover_image_url: string | null;
+    status: string;
+    created_at: string;
+    entry: { count: number }[];
+    order_proposal: { count: number }[];
+  };
+  const rows = (franchises ?? []) as unknown as FranchiseWithCounts[];
+  const enriched = rows.map((f) => ({
+    id: f.id,
+    title: f.title,
+    slug: f.slug,
+    cover_image_url: f.cover_image_url,
+    status: f.status,
+    created_at: f.created_at,
+    entry_count: f.entry?.[0]?.count ?? 0,
+    proposal_count: f.order_proposal?.[0]?.count ?? 0,
   }));
 
   if (sort === "proposal_count") {
@@ -84,7 +74,6 @@ export async function GET(request: NextRequest) {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   } else {
-    // Default: entry_count
     enriched.sort((a, b) => b.entry_count - a.entry_count);
   }
 

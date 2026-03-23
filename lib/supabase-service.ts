@@ -1,12 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Service-role Supabase client for server-side operations that bypass RLS.
- * Use only in API routes for trusted operations like applying proposals.
+ * Singleton — the service client has no per-request state (no cookies),
+ * so one instance is reused across all requests to reduce connection pressure.
  */
-export function createServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+let serviceClient: SupabaseClient | null = null;
+
+export function createServiceClient(): SupabaseClient {
+  if (!serviceClient) {
+    serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return serviceClient;
 }

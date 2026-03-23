@@ -35,7 +35,9 @@ export async function GET() {
     totalUsersRes,
     newUsersRes,
     totalFranchisesRes,
-    proposalCountsRes,
+    openProposalsRes,
+    pendingProposalsRes,
+    appliedProposalsRes,
     activeUsersRes,
     topUsersRes,
     recentActivityRes,
@@ -48,7 +50,16 @@ export async function GET() {
     supabase.from("franchise").select("id", { count: "exact", head: true }),
     supabase
       .from("order_proposal")
-      .select("status"),
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open"),
+    supabase
+      .from("order_proposal")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending_approval"),
+    supabase
+      .from("order_proposal")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "applied"),
     supabase
       .from("users")
       .select("id", { count: "exact", head: true })
@@ -70,13 +81,11 @@ export async function GET() {
       .limit(10),
   ]);
 
-  // Count proposals by status
-  const proposalsByStatus: Record<string, number> = {};
-  if (proposalCountsRes.data) {
-    for (const p of proposalCountsRes.data) {
-      proposalsByStatus[p.status] = (proposalsByStatus[p.status] || 0) + 1;
-    }
-  }
+  const proposalsByStatus: Record<string, number> = {
+    open: openProposalsRes.count ?? 0,
+    pending_approval: pendingProposalsRes.count ?? 0,
+    applied: appliedProposalsRes.count ?? 0,
+  };
 
   return NextResponse.json({
     totalUsers: totalUsersRes.count ?? 0,

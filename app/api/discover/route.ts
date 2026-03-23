@@ -56,8 +56,8 @@ async function getClaimedAnilistIds(): Promise<Set<number>> {
   const supabase = createClient();
 
   const [{ data: franchises }, { data: entries }] = await Promise.all([
-    supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null),
-    supabase.from("entry").select("anilist_id").not("anilist_id", "is", null),
+    supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null).limit(5000),
+    supabase.from("entry").select("anilist_id").not("anilist_id", "is", null).limit(10000),
   ]);
 
   const ids = new Set<number>();
