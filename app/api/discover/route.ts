@@ -49,7 +49,9 @@ export async function GET(request: Request) {
   // AniList returns up to 18 per page; if we got fewer, there are no more
   const hasMore = anime.length >= 18;
 
-  return NextResponse.json({ results, hasMore });
+  return NextResponse.json({ results, hasMore }, {
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
+  });
 }
 
 async function getClaimedAnilistIds(): Promise<Set<number>> {

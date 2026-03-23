@@ -27,5 +27,7 @@ export async function GET(
 
   const relations = await fetchMediaRelations(franchise.anilist_id);
 
-  return NextResponse.json({ relations });
+  return NextResponse.json({ relations }, {
+    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=600" },
+  });
 }

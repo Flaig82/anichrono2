@@ -33,5 +33,7 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ count: seen.size, users });
+  return NextResponse.json({ count: seen.size, users }, {
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=15" },
+  });
 }

@@ -21,5 +21,7 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(entries ?? []);
+  return NextResponse.json(entries ?? [], {
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
+  });
 }

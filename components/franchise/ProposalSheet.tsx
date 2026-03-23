@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import useSWR from "swr";
 import Link from "next/link";
+import Image from "next/image";
 import { X, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getRelativeTime } from "@/lib/utils";
@@ -123,10 +124,12 @@ export default function ProposalSheet({
               {/* Author row */}
               <div className="flex items-center gap-3">
                 {proposal.author?.avatar_url ? (
-                  <img
+                  <Image
                     src={proposal.author.avatar_url}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">

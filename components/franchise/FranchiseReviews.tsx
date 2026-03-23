@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Star, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { showQuestToasts } from "@/lib/quest-toast";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface ReviewAuthor {
@@ -165,10 +166,12 @@ export default function FranchiseReviews({ franchiseId }: FranchiseReviewsProps)
             >
               <div className="flex items-center gap-3">
                 {review.users.avatar_url ? (
-                  <img
+                  <Image
                     src={review.users.avatar_url}
                     alt=""
-                    className="h-8 w-8 rounded-full object-cover"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
                   />
                 ) : (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1a1a1e] font-body text-[12px] font-bold text-aura-muted">

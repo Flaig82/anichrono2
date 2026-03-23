@@ -48,5 +48,7 @@ export async function GET(
       };
     });
 
-  return NextResponse.json({ recommendations: enriched });
+  return NextResponse.json({ recommendations: enriched }, {
+    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=600" },
+  });
 }
