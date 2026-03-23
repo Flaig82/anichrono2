@@ -9,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
 
 const tabs = [
   { id: "chronological", label: "Chronological Order", icon: ListOrdered },
@@ -34,8 +33,6 @@ export default function FranchiseTabBar({
   const [internalTab, setInternalTab] = useState<TabId>("chronological");
   const [showMobileModal, setShowMobileModal] = useState(false);
   const activeTab = controlledTab ?? internalTab;
-  const { user } = useAuth();
-
   function handleTabClick(tabId: TabId) {
     if (isEditing) return;
     setInternalTab(tabId);
@@ -66,26 +63,24 @@ export default function FranchiseTabBar({
       <span className="ml-auto font-body text-[10px] text-aura-muted/60">
         Paid links on this page
       </span>
-      {user && (
-        <button
-          onClick={() => {
-            if (window.innerWidth < 768) {
-              setShowMobileModal(true);
-            } else {
-              onEditClick?.();
-            }
-          }}
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-5 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors",
-            isEditing
-              ? "bg-aura-orange"
-              : "bg-[rgba(49,49,49,0.6)] hover:bg-[rgba(49,49,49,0.8)]",
-          )}
-        >
-          {isEditing ? <X size={16} /> : <Pencil size={16} />}
-          {isEditing ? "Editing" : "Edit"}
-        </button>
-      )}
+      <button
+        onClick={() => {
+          if (window.innerWidth < 768) {
+            setShowMobileModal(true);
+          } else {
+            onEditClick?.();
+          }
+        }}
+        className={cn(
+          "flex items-center gap-2.5 rounded-lg px-5 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white backdrop-blur-[10px] transition-colors",
+          isEditing
+            ? "bg-aura-orange"
+            : "bg-[rgba(49,49,49,0.6)] hover:bg-[rgba(49,49,49,0.8)]",
+        )}
+      >
+        {isEditing ? <X size={16} /> : <Pencil size={16} />}
+        {isEditing ? "Editing" : "Edit"}
+      </button>
 
       {/* Mobile editing modal */}
       {showMobileModal && (

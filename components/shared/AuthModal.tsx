@@ -10,9 +10,28 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface AuthModalProps {
   onClose: () => void;
+  context?: "edit" | "track" | "default";
 }
 
-export default function AuthModal({ onClose }: AuthModalProps) {
+const VALUE_PROPS = {
+  default: [
+    { emoji: "🔮", text: "Vote in brackets & earn Oracle Aura" },
+    { emoji: "📜", text: "Track your anime journey across every franchise" },
+    { emoji: "🌳", text: "Build your unique Aura Tree" },
+  ],
+  track: [
+    { emoji: "🔮", text: "Vote in brackets & earn Oracle Aura" },
+    { emoji: "📜", text: "Track your anime journey across every franchise" },
+    { emoji: "🌳", text: "Build your unique Aura Tree" },
+  ],
+  edit: [
+    { emoji: "✏️", text: "Propose edits to watch orders & earn Archivist Aura" },
+    { emoji: "🗳️", text: "Vote on community changes" },
+    { emoji: "📜", text: "Track your progress across every franchise" },
+  ],
+} as const;
+
+export default function AuthModal({ onClose, context = "default" }: AuthModalProps) {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -92,18 +111,12 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               Join AnimeChrono
             </h2>
             <ul className="flex flex-col gap-1.5 text-left">
-              <li className="font-body text-[13px] text-aura-muted2">
-                <span className="mr-1.5">🔮</span>
-                Vote in brackets & earn Oracle Aura
-              </li>
-              <li className="font-body text-[13px] text-aura-muted2">
-                <span className="mr-1.5">📜</span>
-                Track your anime journey across every franchise
-              </li>
-              <li className="font-body text-[13px] text-aura-muted2">
-                <span className="mr-1.5">🌳</span>
-                Build your unique Aura Tree
-              </li>
+              {VALUE_PROPS[context].map((prop) => (
+                <li key={prop.text} className="font-body text-[13px] text-aura-muted2">
+                  <span className="mr-1.5">{prop.emoji}</span>
+                  {prop.text}
+                </li>
+              ))}
             </ul>
           </div>
 

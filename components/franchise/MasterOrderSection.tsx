@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, X } from "lucide-react";
+import Link from "next/link";
+import { Pencil, Shield, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useWatchProgress } from "@/hooks/use-watch-progress";
 import type { EntryData } from "@/types/proposal";
@@ -53,6 +54,7 @@ export default function MasterOrderSection({
   const [isEditing, setIsEditing] = useState(false);
   const [showEraGate, setShowEraGate] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalContext, setAuthModalContext] = useState<"edit" | "track" | "default">("default");
   const [editorAnilistIds, setEditorAnilistIds] = useState<Set<number>>(new Set());
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -61,6 +63,7 @@ export default function MasterOrderSection({
   const onWatch = useCallback(
     (entryId: string, value: number) => {
       if (!user) {
+        setAuthModalContext("track");
         setShowAuthModal(true);
         return;
       }
@@ -96,6 +99,7 @@ export default function MasterOrderSection({
 
   function handleEditClick() {
     if (!user) {
+      setAuthModalContext("edit");
       setShowAuthModal(true);
       return;
     }
@@ -129,7 +133,7 @@ export default function MasterOrderSection({
 
         {/* Auth modal for logged-out users */}
         {showAuthModal && (
-          <AuthModal onClose={() => setShowAuthModal(false)} />
+          <AuthModal onClose={() => setShowAuthModal(false)} context={authModalContext} />
         )}
 
         {/* Era gate dialog */}
@@ -207,6 +211,36 @@ export default function MasterOrderSection({
               ))}
             </div>
 
+            {/* Inline CTA for logged-out users */}
+            {!user && entries.length > 0 && (
+              <div className="flex flex-col items-center gap-4 rounded-xl border border-aura-border bg-aura-bg2 px-6 py-8 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aura-orange/10">
+                  <Pencil size={20} className="text-aura-orange" />
+                </div>
+                <h3 className="font-body text-[16px] font-bold text-white">
+                  Think this order could be improved?
+                </h3>
+                <p className="max-w-md font-body text-[13px] leading-relaxed text-aura-muted2">
+                  Join AnimeChrono to suggest edits, vote on changes, and help
+                  build the best watch orders for every franchise.
+                </p>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href="/signup"
+                    className="flex items-center gap-2 rounded-lg bg-aura-orange px-5 py-2.5 font-body text-[14px] font-bold text-white transition-colors hover:bg-aura-orange-hover"
+                  >
+                    Join &amp; Contribute
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="font-body text-[13px] font-semibold text-aura-muted2 transition-colors hover:text-white"
+                  >
+                    Sign in
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* Empty state */}
             {entries.length === 0 && (
               <div className="flex flex-col items-center gap-3 rounded-xl bg-[#212121] py-16">
@@ -227,6 +261,18 @@ export default function MasterOrderSection({
             <p className="font-body text-xs text-aura-muted2">
               This tab is under construction.
             </p>
+          </div>
+        )}
+
+        {/* Mobile sidebar content — Shop, Activity, Similar (no Aura breakdown) */}
+        {!isEditing && (
+          <div className="flex flex-col gap-6 rounded-xl bg-card p-3.5 lg:hidden">
+            <FranchiseActivity
+              franchiseId={franchiseId}
+              franchiseTitle={heroTitle}
+              currentEntries={entries}
+            />
+            <SimilarAnime franchiseId={franchiseId} />
           </div>
         )}
       </div>

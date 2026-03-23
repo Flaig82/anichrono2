@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, BookmarkCheck, ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronDown, ChevronRight, Trash2, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useFranchiseWatchlist } from "@/hooks/use-franchise-watchlist";
@@ -119,8 +119,8 @@ export default function FranchiseHero({
               </p>
             )}
 
-            {/* Watchlist CTA */}
-            {user && (
+            {/* Watchlist CTA (logged in) / Registration CTA (logged out) */}
+            {user ? (
               <div className="relative mt-1" ref={dropdownRef}>
                 {!isOnWatchlist ? (
                   <button
@@ -188,6 +188,22 @@ export default function FranchiseHero({
                     </button>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="mt-1 flex items-center gap-4">
+                <Link
+                  href="/signup"
+                  className="flex items-center gap-2 rounded-full bg-aura-orange px-6 py-2.5 font-body text-[14px] font-bold tracking-[-0.28px] text-white transition-colors hover:bg-aura-orange-hover"
+                >
+                  <UserPlus size={16} />
+                  Track Your Progress
+                </Link>
+                <Link
+                  href="/login"
+                  className="font-body text-[13px] font-semibold text-white/60 transition-colors hover:text-white"
+                >
+                  Sign in
+                </Link>
               </div>
             )}
           </div>

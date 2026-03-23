@@ -44,6 +44,12 @@ export default function Footer() {
           >
             Feedback
           </Link>
+          <Link
+            href="/changelog"
+            className="font-body text-[12px] text-aura-muted2 hover:text-white transition-colors"
+          >
+            Changelog
+          </Link>
         </div>
 
         {/* Right: Legal links */}
