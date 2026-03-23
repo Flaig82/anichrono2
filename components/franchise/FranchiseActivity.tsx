@@ -259,8 +259,10 @@ export default function FranchiseActivity({
           return;
         }
 
-        // Revalidate from server
-        mutate();
+        if (!res.ok) {
+          // Unexpected error — revert optimistic update
+          mutate(data, false);
+        }
       } catch {
         mutate(data, false);
       }
