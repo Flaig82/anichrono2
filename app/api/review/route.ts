@@ -15,7 +15,7 @@ const reviewLimiter = createRateLimiter("review", {
 
 /** GET /api/review?franchise_id=X — list reviews for a franchise */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const url = new URL(request.url);
   const franchiseId = url.searchParams.get("franchise_id");
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
 /** POST /api/review — submit a review */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

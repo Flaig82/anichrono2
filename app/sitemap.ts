@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://animechrono.com";
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Fetch all franchise slugs
   const { data: franchises } = await supabase

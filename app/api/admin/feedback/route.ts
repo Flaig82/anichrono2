@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/admin/feedback — fetch recent feedback submissions */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

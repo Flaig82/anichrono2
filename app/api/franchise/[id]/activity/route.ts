@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
 /** GET /api/franchise/[id]/activity — pending + recent proposals for sidebar */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const franchiseId = params.id;
+  const supabase = await createClient();
+  const franchiseId = (await params).id;
 
   // Fetch open + pending_approval proposals (pending updates)
   const { data: pending } = await supabase

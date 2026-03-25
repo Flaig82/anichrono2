@@ -22,7 +22,7 @@ function getObscurityTier(memberCount: number): { score: number; tier: string } 
 
 /** POST /api/franchise/create — create a new franchise with entries */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Auth check
   const {

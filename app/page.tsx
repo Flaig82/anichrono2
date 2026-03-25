@@ -27,7 +27,7 @@ async function getFranchises(opts: {
   sortBy: "updated_at" | "created_at";
   excludeIds?: string[];
 } = { sortBy: "updated_at" }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("franchise")
@@ -122,7 +122,7 @@ async function getFranchises(opts: {
 }
 
 export default async function Home() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { season, year, label } = getCurrentSeason();
   const [updatedFranchises, seasonalAnime, hiddenGems] = await Promise.all([
     getFranchises({ sortBy: "updated_at" }),

@@ -16,10 +16,10 @@ const voteLimiter = createRateLimiter("proposal-vote", {
 /** POST /api/proposal/[id]/vote — upsert a vote on a proposal */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const proposalId = params.id;
+  const supabase = await createClient();
+  const proposalId = (await params).id;
 
   // Auth check
   const {
@@ -156,10 +156,10 @@ export async function POST(
 /** DELETE /api/proposal/[id]/vote — remove the current user's vote */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const proposalId = params.id;
+  const supabase = await createClient();
+  const proposalId = (await params).id;
 
   const {
     data: { user },

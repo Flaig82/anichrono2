@@ -36,8 +36,8 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.getUser();
   }
 
-  // Set cookie consent flag for non-US visitors (Vercel provides geo data)
-  const country = request.geo?.country;
+  // Set cookie consent flag for non-US visitors (Vercel provides geo data via header)
+  const country = request.headers.get("x-vercel-ip-country");
   if (country && country !== "US") {
     supabaseResponse.cookies.set("needs-cookie-consent", "1", {
       path: "/",

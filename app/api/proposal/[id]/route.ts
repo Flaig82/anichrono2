@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
 /** GET /api/proposal/[id] — fetch a single proposal with author info and user vote */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const proposalId = params.id;
+  const supabase = await createClient();
+  const proposalId = (await params).id;
 
   // Fetch proposal with author join
   const { data: proposal, error } = await supabase

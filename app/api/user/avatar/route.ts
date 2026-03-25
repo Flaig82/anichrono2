@@ -28,7 +28,7 @@ async function ensureBucket(serviceClient: ReturnType<typeof createServiceClient
 
 /** POST /api/user/avatar — upload avatar image */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

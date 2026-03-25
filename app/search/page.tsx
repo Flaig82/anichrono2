@@ -32,7 +32,7 @@ interface FranchiseResult {
 async function searchFranchises(query: string): Promise<FranchiseResult[]> {
   if (!query) return [];
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: franchises } = await supabase
     .from("franchise")
@@ -78,7 +78,7 @@ async function searchFranchises(query: string): Promise<FranchiseResult[]> {
 async function searchUnclaimed(query: string): Promise<PosterItem[]> {
   if (!query) return [];
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [results, { data: claimedFranchises }, { data: claimedEntries }] = await Promise.all([
     fetchDiscoverAnime({ search: query }),

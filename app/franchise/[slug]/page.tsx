@@ -14,7 +14,7 @@ interface EntryGroupData {
 }
 
 async function getFranchise(slug: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: franchise } = await supabase
     .from("franchise")
@@ -28,7 +28,7 @@ async function getFranchise(slug: string) {
 }
 
 async function getEntries(franchiseId: string): Promise<EntryRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: entries } = await supabase
     .from("entry")
@@ -63,9 +63,10 @@ function groupEntriesByParentSeries(entries: EntryRow[]): EntryGroupData[] {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const franchise = await getFranchise(params.slug);
+  const { slug } = await params;
+  const franchise = await getFranchise(slug);
 
   if (!franchise) {
     return { title: "Franchise Not Found" };
@@ -103,14 +104,15 @@ export async function generateMetadata({
 export default async function FranchisePage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const franchise = await getFranchise(params.slug);
+  const { slug } = await params;
+  const franchise = await getFranchise(slug);
 
   // Alias redirect: if slug matches a parent_series name, redirect to its franchise
   if (!franchise) {
-    const supabase = createClient();
-    const slugPattern = params.slug.replace(/-/g, " ");
+    const supabase = await createClient();
+    const slugPattern = slug.replace(/-/g, " ");
 
     const { data: entry } = await supabase
       .from("entry")

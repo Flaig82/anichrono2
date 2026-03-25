@@ -5,10 +5,10 @@ import { fetchMediaRelations } from "@/lib/anilist";
 /** GET /api/franchise/[id]/relations — fetch AniList relations for a franchise */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const franchiseId = params.id;
+  const supabase = await createClient();
+  const franchiseId = (await params).id;
 
   // Look up the franchise's anilist_id
   const { data: franchise, error } = await supabase

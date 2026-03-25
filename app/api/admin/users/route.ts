@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /** GET /api/admin/users — paginated user list with search/sort */
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Auth + admin check
   const {

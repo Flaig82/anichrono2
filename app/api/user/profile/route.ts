@@ -12,7 +12,7 @@ const profileLimiter = createRateLimiter("profile-update", {
 
 /** PATCH /api/user/profile — update own profile */
 export async function PATCH(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -16,9 +16,10 @@ const deleteNoteLimiter = createRateLimiter("admin-notes-delete", {
 /** PATCH /api/admin/notes/[id] — toggle completion status */
 export async function PATCH(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const { id } = await params;
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -48,7 +49,7 @@ export async function PATCH(
   const { data: existing, error: fetchError } = await service
     .from("admin_notes")
     .select("is_completed")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (fetchError || !existing) {
@@ -64,7 +65,7 @@ export async function PATCH(
       completed_at: nowCompleted ? new Date().toISOString() : null,
       completed_by: nowCompleted ? user.id : null,
     })
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       `id, body, is_completed, completed_at, completed_by, created_at, author_id,
       author:author_id (display_name, avatar_url),
@@ -82,9 +83,10 @@ export async function PATCH(
 /** DELETE /api/admin/notes/[id] — delete an admin note */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const { id } = await params;
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -112,7 +114,7 @@ export async function DELETE(
   const { error } = await service
     .from("admin_notes")
     .delete()
-    .eq("id", params.id);
+    .eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -13,11 +13,11 @@ const awardVoteLimiter = createRateLimiter("award-vote", {
 /** POST /api/award/[id]/vote — cast or change award vote */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const admin = createServiceClient();
-  const awardId = params.id;
+  const awardId = (await params).id;
 
   const {
     data: { user },
@@ -159,11 +159,11 @@ export async function POST(
 /** DELETE /api/award/[id]/vote — remove award vote */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const admin = createServiceClient();
-  const awardId = params.id;
+  const awardId = (await params).id;
 
   const {
     data: { user },

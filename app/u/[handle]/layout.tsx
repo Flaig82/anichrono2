@@ -4,14 +4,15 @@ import { createClient } from "@/lib/supabase-server";
 export async function generateMetadata({
   params,
 }: {
-  params: { handle: string };
+  params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
-  const supabase = createClient();
+  const { handle } = await params;
+  const supabase = await createClient();
 
   const { data: profile } = await supabase
     .from("user")
     .select("display_name, handle, avatar_url, era, total_aura")
-    .eq("handle", params.handle)
+    .eq("handle", handle)
     .single();
 
   if (!profile) {

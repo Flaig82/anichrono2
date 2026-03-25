@@ -12,9 +12,10 @@ const adminUserLimiter = createRateLimiter("admin-user-update", {
 /** PATCH /api/admin/users/[id] — update user (admin toggle, aura, era) */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const { id } = await params;
+  const supabase = await createClient();
 
   // Auth + admin check
   const {
@@ -64,7 +65,7 @@ export async function PATCH(
   const { data, error } = await service
     .from("users")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       "id, display_name, handle, avatar_url, email, era, total_aura, is_admin, created_at",
     )

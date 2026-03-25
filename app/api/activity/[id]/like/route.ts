@@ -13,10 +13,10 @@ const likeLimiter = createRateLimiter("likes", {
 /** POST /api/activity/[id]/like — like an activity item */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const itemId = params.id;
+  const supabase = await createClient();
+  const itemId = (await params).id;
 
   const {
     data: { user },
@@ -94,10 +94,10 @@ export async function POST(
 /** DELETE /api/activity/[id]/like?item_type=... — unlike an activity item */
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const itemId = params.id;
+  const supabase = await createClient();
+  const itemId = (await params).id;
 
   const {
     data: { user },

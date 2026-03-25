@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/user/watchlist/status?franchise_id=X — check if franchise is on watchlist */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

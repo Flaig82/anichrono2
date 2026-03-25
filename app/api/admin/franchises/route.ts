@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase-service";
 
 /** GET /api/admin/franchises — top franchises with entry/proposal counts */
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Auth + admin check
   const {

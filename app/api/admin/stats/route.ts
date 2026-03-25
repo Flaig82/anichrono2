@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/admin/stats — dashboard overview data */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Auth + admin check
   const {
