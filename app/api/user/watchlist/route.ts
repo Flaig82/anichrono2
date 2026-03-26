@@ -11,7 +11,7 @@ const watchlistLimiter = createRateLimiter("watchlist", {
 
 /** POST /api/user/watchlist — add, update, or remove franchise from watchlist */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

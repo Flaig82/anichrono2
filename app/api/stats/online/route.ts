@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/stats/online — count + avatars of recently active users */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 

@@ -5,14 +5,15 @@ import { fetchRecommendations } from "@/lib/anilist";
 /** GET /api/franchise/[id]/recommendations — AniList recommendations for a franchise */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const { id } = await params;
+  const supabase = await createClient();
 
   const { data: franchise, error } = await supabase
     .from("franchise")
     .select("anilist_id")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !franchise) {

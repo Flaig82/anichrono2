@@ -94,7 +94,7 @@ export default async function PredictionsPage() {
   const { season, year, label, key } = getCurrentSeason();
   const seasonLabel = `${label} ${year}`;
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get current user (may be null)
   const { data: { user } } = await supabase.auth.getUser();

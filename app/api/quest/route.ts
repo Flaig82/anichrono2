@@ -5,7 +5,7 @@ import { QUEST_CATEGORIES, type QuestCategory } from "@/types/quest";
 
 /** GET /api/quest?category=weekly — fetch quests with user progress */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

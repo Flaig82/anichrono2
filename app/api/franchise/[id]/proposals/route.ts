@@ -13,10 +13,10 @@ const proposalCreateLimiter = createRateLimiter("proposal-create", {
 /** GET /api/franchise/[id]/proposals — list open proposals for a franchise */
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const franchiseId = params.id;
+  const supabase = await createClient();
+  const franchiseId = (await params).id;
 
   // Get current user for vote info
   const {
@@ -64,10 +64,10 @@ export async function GET(
 /** POST /api/franchise/[id]/proposals — create a new proposal */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const franchiseId = params.id;
+  const supabase = await createClient();
+  const franchiseId = (await params).id;
 
   // Auth check
   const {

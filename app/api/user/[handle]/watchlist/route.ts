@@ -6,10 +6,10 @@ import type { FranchiseWatchStatus, WatchlistItem } from "@/types/watchlist";
 /** GET /api/user/[handle]/watchlist — user's franchise-level watchlist with progress */
 export async function GET(
   request: Request,
-  { params }: { params: { handle: string } },
+  { params }: { params: Promise<{ handle: string }> },
 ) {
-  const supabase = createClient();
-  const { handle } = params;
+  const supabase = await createClient();
+  const { handle } = await params;
 
   // Look up user by handle, fall back to ID
   let { data: targetUser } = await supabase

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Always return success to avoid leaking whether an email exists
   await supabase.auth.resetPasswordForEmail(result.data.email, {

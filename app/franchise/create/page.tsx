@@ -7,16 +7,17 @@ import CreateChroniclePage from "@/components/franchise/CreateChroniclePage";
 export default async function FranchiseCreatePage({
   searchParams,
 }: {
-  searchParams: { anilist?: string };
+  searchParams: Promise<{ anilist?: string }>;
 }) {
   // Auth check — only logged-in users can create franchises
-  const supabaseAuth = createClient();
+  const supabaseAuth = await createClient();
   const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user) {
     redirect("/login");
   }
 
-  const anilistIdStr = searchParams.anilist;
+  const resolvedParams = await searchParams;
+  const anilistIdStr = resolvedParams.anilist;
   if (!anilistIdStr) {
     redirect("/discover");
   }
@@ -57,7 +58,7 @@ export default async function FranchiseCreatePage({
 async function findMatchingFranchise(
   anilistIds: number[],
 ): Promise<{ slug: string; title: string; coverImageUrl: string | null } | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Check franchise table first (direct match is stronger signal)
   const { data: franchiseMatches } = await supabase

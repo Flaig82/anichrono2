@@ -11,10 +11,10 @@ const withdrawLimiter = createRateLimiter("proposal-withdraw", {
 /** POST /api/proposal/[id]/withdraw — author withdraws their own proposal */
 export async function POST(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const proposalId = params.id;
+  const supabase = await createClient();
+  const proposalId = (await params).id;
 
   const {
     data: { user },

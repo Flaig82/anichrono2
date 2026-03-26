@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/activity/live — 15 most recent user actions for the live feed */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("activity")

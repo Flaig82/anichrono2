@@ -11,10 +11,10 @@ interface AuraRow {
 /** GET /api/user/[handle] — public profile */
 export async function GET(
   _request: Request,
-  { params }: { params: { handle: string } },
+  { params }: { params: Promise<{ handle: string }> },
 ) {
-  const supabase = createClient();
-  const { handle } = params;
+  const supabase = await createClient();
+  const { handle } = await params;
 
   const selectCols =
     "id, display_name, handle, avatar_url, era, dominant_aura_type, total_aura, bio, is_watchlist_public, created_at";

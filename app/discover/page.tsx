@@ -31,7 +31,7 @@ function getCurrentSeason(): { season: Season; year: number; label: string } {
 }
 
 async function getClaimedAnilistIds(): Promise<Set<number>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: franchises }, { data: entries }] = await Promise.all([
     supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null),

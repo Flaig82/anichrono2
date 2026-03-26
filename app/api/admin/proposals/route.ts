@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 /** GET /api/admin/proposals — fetch all pending_approval proposals */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Auth check
   const {

@@ -18,10 +18,10 @@ const actionSchema = z.object({
 /** POST /api/admin/proposal/[id] — approve or reject a pending proposal */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
-  const proposalId = params.id;
+  const supabase = await createClient();
+  const proposalId = (await params).id;
 
   // Auth check
   const {

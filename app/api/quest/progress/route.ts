@@ -12,7 +12,7 @@ const questLimiter = createRateLimiter("quest-progress", {
 
 /** POST /api/quest/progress — manually increment quest progress */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

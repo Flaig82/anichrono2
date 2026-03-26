@@ -15,7 +15,7 @@ const postSchema = z.object({
 
 /** GET /api/admin/notes — fetch all admin notes, newest first */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -55,7 +55,7 @@ export async function GET() {
 
 /** POST /api/admin/notes — create a new admin note */
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

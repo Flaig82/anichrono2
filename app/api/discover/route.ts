@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 }
 
 async function getClaimedAnilistIds(): Promise<Set<number>> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: franchises }, { data: entries }] = await Promise.all([
     supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null).limit(5000),

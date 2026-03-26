@@ -83,7 +83,7 @@ async function syncFranchiseWatchlist(
 
 /** GET /api/user/watch?franchise_id=X — fetch user's progress for a franchise */
 export async function GET(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
 
 /** POST /api/user/watch — update watch progress */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

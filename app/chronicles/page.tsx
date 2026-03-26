@@ -33,7 +33,7 @@ interface FranchiseItem {
 }
 
 async function getAllFranchises(): Promise<FranchiseItem[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: franchises } = await supabase
     .from("franchise")

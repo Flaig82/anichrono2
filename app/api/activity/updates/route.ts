@@ -4,7 +4,7 @@ import type { ContentUpdateItem } from "@/types/activity";
 
 /** GET /api/activity/updates — applied proposals + recently added franchises */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Recently applied proposals
   const { data: proposals } = await supabase

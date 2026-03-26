@@ -13,11 +13,11 @@ const matchupVoteLimiter = createRateLimiter("matchup-vote", {
 /** POST /api/matchup/[id]/vote — cast or change matchup vote */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const admin = createServiceClient();
-  const matchupId = params.id;
+  const matchupId = (await params).id;
 
   const {
     data: { user },
@@ -129,11 +129,11 @@ export async function POST(
 /** DELETE /api/matchup/[id]/vote — remove matchup vote */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const admin = createServiceClient();
-  const matchupId = params.id;
+  const matchupId = (await params).id;
 
   const {
     data: { user },
