@@ -212,6 +212,7 @@ export default function FranchiseActivity({
   const { data, isLoading, mutate } = useSWR<ActivityData>(
     `/api/franchise/${franchiseId}/activity`,
     fetcher,
+    { revalidateOnFocus: false },
   );
 
   const pending = data?.pending ?? [];
@@ -246,7 +247,6 @@ export default function FranchiseActivity({
             });
 
         if (res.status === 401) {
-          // Revert and show auth modal
           mutate(data, false);
           setShowAuthModal(true);
           return;
@@ -260,9 +260,18 @@ export default function FranchiseActivity({
         }
 
         if (!res.ok) {
-          // Unexpected error — revert optimistic update
           mutate(data, false);
+          return;
         }
+
+        // Success — re-assert with server-confirmed state to survive stale revalidations
+        const result = await res.json();
+        const confirmedRecent = data.recent.map((p) =>
+          p.id === proposalId
+            ? { ...p, user_liked: result.liked, like_count: result.likeCount }
+            : p,
+        );
+        mutate({ ...data, recent: confirmedRecent }, false);
       } catch {
         mutate(data, false);
       }

@@ -299,7 +299,13 @@ export default function HomeFeed() {
         mutateLive(liveItems, false);
         return;
       }
-      // Success — keep optimistic state, no revalidation needed
+      // Success — re-assert with server-confirmed state to survive stale revalidations
+      const confirmed = liveItems.map((i) =>
+        i.id === id
+          ? { ...i, user_liked: result.liked, like_count: result.likeCount }
+          : i,
+      );
+      mutateLive(confirmed, false);
     },
     [liveItems, mutateLive],
   );
@@ -335,7 +341,13 @@ export default function HomeFeed() {
         mutateUpdates(updateItems, false);
         return;
       }
-      // Success — keep optimistic state, no revalidation needed
+      // Success — re-assert with server-confirmed state to survive stale revalidations
+      const confirmed = updateItems.map((i) =>
+        i.id === id
+          ? { ...i, user_liked: result.liked, like_count: result.likeCount }
+          : i,
+      );
+      mutateUpdates(confirmed, false);
     },
     [updateItems, mutateUpdates],
   );
