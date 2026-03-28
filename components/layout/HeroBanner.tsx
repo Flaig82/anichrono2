@@ -118,7 +118,7 @@ function LoggedInHero() {
             Winter 2026 is live.
           </h1>
           <p className="max-w-[433px] font-body text-[15px] font-medium leading-[1.62] tracking-[-0.14px] text-white">
-            12 shows airing. Oracle predictions lock at Episode 6.
+            12 shows airing. New quests every week.
             <br />
             Welcome back, {displayName}.
           </p>

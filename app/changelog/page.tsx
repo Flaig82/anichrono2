@@ -127,9 +127,9 @@ const ENTRIES: ChangelogEntry[] = [
   },
   {
     date: "2026-03-04",
-    title: "Predictions & quests",
+    title: "Quest system",
     description:
-      "Oracle predictions and the quest system are live — predict seasonal scores and complete daily/weekly quests to earn Aura.",
+      "The quest system is live — complete weekly and seasonal quests to earn Aura and unlock titles.",
     tag: "feature",
   },
   {
