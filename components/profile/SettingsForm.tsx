@@ -2,8 +2,16 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Download, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+
+interface ImportSummary {
+  entries_imported: number;
+  entries_skipped: number;
+  franchises_updated: number;
+  aura_awarded: number;
+  completed_quests: { title: string; aura_amount: number }[];
+}
 
 export default function SettingsForm() {
   const { profile, refreshProfile } = useAuth();
@@ -24,6 +32,10 @@ export default function SettingsForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportSummary | null>(null);
 
   if (!profile) return null;
 
@@ -92,6 +104,34 @@ export default function SettingsForm() {
       setError("Failed to save changes");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleImport() {
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const res = await fetch("/api/import/anilist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setImportError(data.error ?? "Import failed");
+        return;
+      }
+
+      setImportResult(data as ImportSummary);
+      refreshProfile();
+    } catch {
+      setImportError("Import failed. Please try again.");
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -217,6 +257,60 @@ export default function SettingsForm() {
               placeholder="Your AniList username"
               className="rounded-lg border border-aura-border2 bg-aura-bg3 px-3 py-2.5 font-body text-[14px] text-white placeholder:text-aura-muted outline-none transition-colors focus:border-aura-orange"
             />
+
+            {/* Import button */}
+            <div className="flex flex-col gap-2 rounded-lg border border-aura-border bg-aura-bg2 p-4">
+              <p className="font-body text-[12px] text-aura-muted2">
+                Import your completed and in-progress anime. Existing progress won&apos;t be overwritten.
+              </p>
+              <button
+                type="button"
+                onClick={handleImport}
+                disabled={importing || !anilistUsername.trim()}
+                className="flex items-center justify-center gap-2 rounded-lg border border-aura-border2 bg-aura-bg3 px-4 py-2.5 font-body text-[13px] font-bold text-white transition-colors hover:bg-aura-bg4 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {importing ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Download size={14} />
+                )}
+                {importing ? "Importing..." : "Import Watch History from AniList"}
+              </button>
+
+              {importError && (
+                <p className="font-body text-[12px] text-red-400">{importError}</p>
+              )}
+
+              {importResult && (
+                <div className="flex flex-col gap-1 rounded-lg bg-aura-bg3 p-3">
+                  <p className="font-body text-[12px] font-bold text-green-400">
+                    Import complete
+                  </p>
+                  <p className="font-mono text-[11px] text-aura-muted2">
+                    {importResult.entries_imported} entries imported, {importResult.franchises_updated} franchises updated
+                  </p>
+                  {importResult.aura_awarded > 0 && (
+                    <p className="font-mono text-[11px] text-aura-orange">
+                      +{importResult.aura_awarded} Watch Aura
+                    </p>
+                  )}
+                  {importResult.completed_quests.length > 0 && (
+                    <div className="mt-1 flex flex-col gap-0.5">
+                      {importResult.completed_quests.map((q, i) => (
+                        <p key={i} className="font-mono text-[11px] text-aura-orange">
+                          Quest completed: {q.title} (+{q.aura_amount})
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {importResult.entries_skipped > 0 && (
+                    <p className="font-mono text-[10px] text-aura-muted">
+                      {importResult.entries_skipped} AniList entries had no matching AURA entry
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

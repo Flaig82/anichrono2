@@ -537,6 +537,80 @@ export async function fetchRecommendations(id: number): Promise<AniListRecommend
     }));
 }
 
+// --- User anime list (for import) ---
+
+export interface AniListUserEntry {
+  mediaId: number;
+  status: "CURRENT" | "COMPLETED" | "PAUSED" | "DROPPED" | "PLANNING" | "REPEATING";
+  progress: number;
+  score: number | null;
+  completedAt: { year: number | null; month: number | null; day: number | null } | null;
+}
+
+const USER_ANIME_LIST_QUERY = `
+  query ($userName: String) {
+    MediaListCollection(userName: $userName, type: ANIME) {
+      lists {
+        entries {
+          mediaId
+          status
+          progress
+          score(format: POINT_10_DECIMAL)
+          completedAt { year month day }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Fetch a user's full anime list from AniList by username.
+ * Flattens all lists into a single array and filters out PLANNING entries.
+ * Returns null if the user is not found or the list is private.
+ */
+export async function fetchUserAnimeList(
+  userName: string,
+): Promise<AniListUserEntry[] | null> {
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: USER_ANIME_LIST_QUERY,
+      variables: { userName },
+    }),
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return null;
+  }
+
+  const json = await res.json();
+  if (json.errors) {
+    console.error("AniList query errors:", json.errors);
+    return null;
+  }
+
+  const lists = json.data?.MediaListCollection?.lists;
+  if (!lists) return null;
+
+  const entries: AniListUserEntry[] = [];
+  for (const list of lists) {
+    for (const entry of list.entries ?? []) {
+      if (entry.status === "PLANNING") continue;
+      entries.push({
+        mediaId: entry.mediaId,
+        status: entry.status,
+        progress: entry.progress ?? 0,
+        score: entry.score || null,
+        completedAt: entry.completedAt ?? null,
+      });
+    }
+  }
+
+  return entries;
+}
+
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",

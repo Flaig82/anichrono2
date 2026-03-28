@@ -54,6 +54,7 @@ const ACTION_LABELS: Record<string, string> = {
   rate: "rated",
   drop: "dropped",
   add_to_watchlist: "added to watchlist",
+  anilist_import: "imported from AniList",
   add_to_watchlist__plan_to_watch: "plans to watch",
   add_to_watchlist__watching: "is watching",
   add_to_watchlist__on_hold: "put on hold",
@@ -293,8 +294,12 @@ export default function HomeFeed() {
         setShowAuthModal(true);
         return;
       }
-      // Revalidate from server
-      mutateLive();
+      if (result.likeCount === -1) {
+        // Error or rate limit — revert to pre-click state
+        mutateLive(liveItems, false);
+        return;
+      }
+      // Success — keep optimistic state, no revalidation needed
     },
     [liveItems, mutateLive],
   );
@@ -325,7 +330,12 @@ export default function HomeFeed() {
         setShowAuthModal(true);
         return;
       }
-      mutateUpdates();
+      if (result.likeCount === -1) {
+        // Error or rate limit — revert to pre-click state
+        mutateUpdates(updateItems, false);
+        return;
+      }
+      // Success — keep optimistic state, no revalidation needed
     },
     [updateItems, mutateUpdates],
   );
