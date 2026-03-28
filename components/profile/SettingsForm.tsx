@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Camera, Download, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Camera, Download, Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface ImportSummary {
@@ -11,6 +12,15 @@ interface ImportSummary {
   franchises_updated: number;
   aura_awarded: number;
   completed_quests: { title: string; aura_amount: number }[];
+  unmatched_media_ids: number[];
+}
+
+interface UnmatchedMediaItem {
+  id: number;
+  titleEnglish: string | null;
+  titleRomaji: string;
+  coverImageUrl: string | null;
+  format: string | null;
 }
 
 export default function SettingsForm() {
@@ -36,6 +46,8 @@ export default function SettingsForm() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportSummary | null>(null);
+  const [unmatchedMedia, setUnmatchedMedia] = useState<UnmatchedMediaItem[]>([]);
+  const [loadingUnmatched, setLoadingUnmatched] = useState(false);
 
   if (!profile) return null;
 
@@ -111,6 +123,7 @@ export default function SettingsForm() {
     setImporting(true);
     setImportError(null);
     setImportResult(null);
+    setUnmatchedMedia([]);
 
     try {
       const res = await fetch("/api/import/anilist", {
@@ -126,8 +139,27 @@ export default function SettingsForm() {
         return;
       }
 
-      setImportResult(data as ImportSummary);
+      const result = data as ImportSummary;
+      setImportResult(result);
       refreshProfile();
+
+      // Fetch metadata for unmatched anime
+      if (result.unmatched_media_ids?.length > 0) {
+        setLoadingUnmatched(true);
+        try {
+          const batchRes = await fetch(
+            `/api/anilist/batch?ids=${result.unmatched_media_ids.join(",")}`,
+          );
+          if (batchRes.ok) {
+            const batchData = await batchRes.json();
+            setUnmatchedMedia(batchData.media ?? []);
+          }
+        } catch {
+          // Non-critical — unmatched list just won't show
+        } finally {
+          setLoadingUnmatched(false);
+        }
+      }
     } catch {
       setImportError("Import failed. Please try again.");
     } finally {
@@ -303,10 +335,64 @@ export default function SettingsForm() {
                       ))}
                     </div>
                   )}
-                  {importResult.entries_skipped > 0 && (
+                  {importResult.entries_skipped > 0 && !loadingUnmatched && unmatchedMedia.length === 0 && (
                     <p className="font-mono text-[10px] text-aura-muted">
                       {importResult.entries_skipped} AniList entries had no matching AURA entry
                     </p>
+                  )}
+                  {loadingUnmatched && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Loader2 size={12} className="animate-spin text-aura-muted" />
+                      <p className="font-mono text-[10px] text-aura-muted">Loading unmatched anime...</p>
+                    </div>
+                  )}
+                  {unmatchedMedia.length > 0 && (
+                    <div className="mt-1 flex flex-col gap-2">
+                      <p className="font-body text-[12px] font-bold text-white">
+                        {importResult.entries_skipped} anime from your list aren&apos;t on AnimeChrono yet
+                        {importResult.entries_skipped > 50 && (
+                          <span className="font-normal text-aura-muted"> (showing top 50)</span>
+                        )}
+                      </p>
+                      <p className="font-body text-[11px] text-aura-muted2">
+                        Help the community by adding watch orders for anime you know
+                      </p>
+                      <div className="max-h-64 overflow-y-auto rounded-lg border border-aura-border bg-aura-bg2">
+                        {unmatchedMedia.map((item) => (
+                          <Link
+                            key={item.id}
+                            href={`/franchise/create?anilist=${item.id}`}
+                            className="group flex items-center gap-3 border-b border-aura-border px-3 py-2 transition-colors last:border-b-0 hover:bg-aura-bg4"
+                          >
+                            {item.coverImageUrl ? (
+                              <Image
+                                src={item.coverImageUrl}
+                                alt={item.titleEnglish ?? item.titleRomaji}
+                                width={32}
+                                height={44}
+                                className="shrink-0 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="h-[44px] w-[32px] shrink-0 rounded bg-aura-bg4" />
+                            )}
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <span className="truncate font-body text-[12px] font-bold text-white">
+                                {item.titleEnglish ?? item.titleRomaji}
+                              </span>
+                              {item.titleEnglish && item.titleRomaji !== item.titleEnglish && (
+                                <span className="truncate font-body text-[10px] text-aura-muted">
+                                  {item.titleRomaji}
+                                </span>
+                              )}
+                            </div>
+                            <span className="flex shrink-0 items-center gap-1 font-mono text-[10px] text-aura-muted opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-aura-orange">
+                              <Plus size={10} />
+                              Create
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

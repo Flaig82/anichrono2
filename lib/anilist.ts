@@ -537,6 +537,55 @@ export async function fetchRecommendations(id: number): Promise<AniListRecommend
     }));
 }
 
+// --- Batch media fetch (for unmatched import items) ---
+
+export interface AniListMediaBatchItem {
+  id: number;
+  titleEnglish: string | null;
+  titleRomaji: string;
+  coverImageUrl: string | null;
+  format: string | null;
+}
+
+const MEDIA_BATCH_QUERY = `
+  query ($ids: [Int]) {
+    Page(perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        id
+        title { english romaji }
+        coverImage { large }
+        format
+      }
+    }
+  }
+`;
+
+export async function fetchMediaBatch(ids: number[]): Promise<AniListMediaBatchItem[]> {
+  if (ids.length === 0) return [];
+
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: MEDIA_BATCH_QUERY, variables: { ids: ids.slice(0, 50) } }),
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return [];
+  }
+
+  const json = await res.json();
+  const media = json.data?.Page?.media ?? [];
+
+  return media.map((m: { id: number; title: { english: string | null; romaji: string }; coverImage: { large: string | null }; format: string | null }) => ({
+    id: m.id,
+    titleEnglish: m.title.english,
+    titleRomaji: m.title.romaji,
+    coverImageUrl: m.coverImage.large,
+    format: m.format,
+  }));
+}
+
 // --- User anime list (for import) ---
 
 export interface AniListUserEntry {

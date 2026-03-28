@@ -46,6 +46,7 @@ export interface ImportResult {
   franchises_updated: number;
   aura_awarded: number;
   completed_quests: { title: string; aura_amount: number }[];
+  unmatched_media_ids: number[];
 }
 
 /**
@@ -165,12 +166,19 @@ export async function importFromAniList(
     .not("anilist_id", "is", null);
 
   if (!auraEntries || auraEntries.length === 0) {
+    // All entries are unmatched — sort by status priority, cap at 50
+    const allIds = anilistEntries
+      .map((e) => ({ mediaId: e.mediaId, priority: statusPriority(e.status) }))
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 50)
+      .map((e) => e.mediaId);
     return {
       entries_imported: 0,
       entries_skipped: anilistEntries.length,
       franchises_updated: 0,
       aura_awarded: 0,
       completed_quests: [],
+      unmatched_media_ids: allIds,
     };
   }
 
@@ -199,7 +207,7 @@ export async function importFromAniList(
   // 3. Match and build upserts
   const watchUpserts: WatchUpsert[] = [];
   const touchedFranchises = new Set<string>();
-  let entriesSkipped = 0;
+  const skippedEntries: { mediaId: number; priority: number }[] = [];
   let newlyCompletedCount = 0;
   let totalEpisodesWatched = 0;
 
@@ -209,7 +217,7 @@ export async function importFromAniList(
   for (const alEntry of anilistEntries) {
     const matchingEntries = anilistMap.get(alEntry.mediaId);
     if (!matchingEntries) {
-      entriesSkipped++;
+      skippedEntries.push({ mediaId: alEntry.mediaId, priority: statusPriority(alEntry.status) });
       continue;
     }
 
@@ -259,13 +267,20 @@ export async function importFromAniList(
     }
   }
 
+  // Sort skipped by status priority (COMPLETED first), cap at 50
+  const unmatchedMediaIds = skippedEntries
+    .sort((a, b) => b.priority - a.priority)
+    .slice(0, 50)
+    .map((e) => e.mediaId);
+
   if (dryRun) {
     return {
       entries_imported: watchUpserts.length,
-      entries_skipped: entriesSkipped,
+      entries_skipped: skippedEntries.length,
       franchises_updated: touchedFranchises.size,
       aura_awarded: 0,
       completed_quests: [],
+      unmatched_media_ids: unmatchedMediaIds,
     };
   }
 
@@ -388,10 +403,11 @@ export async function importFromAniList(
 
   return {
     entries_imported: watchUpserts.length,
-    entries_skipped: entriesSkipped,
+    entries_skipped: skippedEntries.length,
     franchises_updated: touchedFranchises.size,
     aura_awarded: totalAuraAwarded,
     completed_quests: completedQuests,
+    unmatched_media_ids: unmatchedMediaIds,
   };
 }
 
