@@ -28,6 +28,20 @@ const TAG_STYLES: Record<
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-03-28",
+    title: "Unmatched anime after AniList import",
+    description:
+      "After importing your AniList watch history, anime that aren't on AnimeChrono yet now appear with cover art and a link to create a watch order for them.",
+    tag: "feature",
+  },
+  {
+    date: "2026-03-28",
+    title: "Like button reliability",
+    description:
+      "Fixed an issue where likes on activity feed items could visually revert after clicking. Likes now stick reliably across all feeds.",
+    tag: "fix",
+  },
+  {
     date: "2026-03-23",
     title: "Franchise page CTAs for visitors",
     description:
