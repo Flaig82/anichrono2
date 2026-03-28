@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { CheckCircle2, Compass, ShoppingBag } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, trackAmazonClick } from "@/lib/utils";
 
 const AMAZON_TAG = "animechrono-20";
 const PURCHASABLE_TYPES = new Set(["movie", "ova", "ona", "special", "manga"]);
@@ -258,7 +258,7 @@ export default function EntryRow({
               rel="noopener noreferrer"
               title="Find on Amazon"
               className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/[0.05] hover:text-aura-orange"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); trackAmazonClick(`${franchiseTitle} - ${title}`); }}
             >
               <span className={`font-body text-xs font-light ${typeColor}`}>
                 {episodeInfo}

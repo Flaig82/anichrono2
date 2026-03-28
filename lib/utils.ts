@@ -14,6 +14,25 @@ export function generateSlug(title: string): string {
     .replace(/-{2,}/g, "-");
 }
 
+/** Track an Amazon affiliate link click via GA4 + Supabase. */
+export function trackAmazonClick(label: string) {
+  if (typeof window === "undefined") return;
+
+  if (typeof window.gtag === "function") {
+    window.gtag("event", "amazon_click", {
+      event_category: "affiliate",
+      event_label: label,
+    });
+  }
+
+  fetch("/api/track/amazon", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 export function getRelativeTime(dateString: string): string {
   const diff = Date.now() - new Date(dateString).getTime();
   const minutes = Math.floor(diff / 60000);

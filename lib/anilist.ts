@@ -537,6 +537,129 @@ export async function fetchRecommendations(id: number): Promise<AniListRecommend
     }));
 }
 
+// --- Batch media fetch (for unmatched import items) ---
+
+export interface AniListMediaBatchItem {
+  id: number;
+  titleEnglish: string | null;
+  titleRomaji: string;
+  coverImageUrl: string | null;
+  format: string | null;
+}
+
+const MEDIA_BATCH_QUERY = `
+  query ($ids: [Int]) {
+    Page(perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        id
+        title { english romaji }
+        coverImage { large }
+        format
+      }
+    }
+  }
+`;
+
+export async function fetchMediaBatch(ids: number[]): Promise<AniListMediaBatchItem[]> {
+  if (ids.length === 0) return [];
+
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: MEDIA_BATCH_QUERY, variables: { ids: ids.slice(0, 50) } }),
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return [];
+  }
+
+  const json = await res.json();
+  const media = json.data?.Page?.media ?? [];
+
+  return media.map((m: { id: number; title: { english: string | null; romaji: string }; coverImage: { large: string | null }; format: string | null }) => ({
+    id: m.id,
+    titleEnglish: m.title.english,
+    titleRomaji: m.title.romaji,
+    coverImageUrl: m.coverImage.large,
+    format: m.format,
+  }));
+}
+
+// --- User anime list (for import) ---
+
+export interface AniListUserEntry {
+  mediaId: number;
+  status: "CURRENT" | "COMPLETED" | "PAUSED" | "DROPPED" | "PLANNING" | "REPEATING";
+  progress: number;
+  score: number | null;
+  completedAt: { year: number | null; month: number | null; day: number | null } | null;
+}
+
+const USER_ANIME_LIST_QUERY = `
+  query ($userName: String) {
+    MediaListCollection(userName: $userName, type: ANIME) {
+      lists {
+        entries {
+          mediaId
+          status
+          progress
+          score(format: POINT_10_DECIMAL)
+          completedAt { year month day }
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Fetch a user's full anime list from AniList by username.
+ * Flattens all lists into a single array and filters out PLANNING entries.
+ * Returns null if the user is not found or the list is private.
+ */
+export async function fetchUserAnimeList(
+  userName: string,
+): Promise<AniListUserEntry[] | null> {
+  const res = await fetch(ANILIST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: USER_ANIME_LIST_QUERY,
+      variables: { userName },
+    }),
+  });
+
+  if (!res.ok) {
+    console.error(`AniList API error: ${res.status} ${res.statusText}`);
+    return null;
+  }
+
+  const json = await res.json();
+  if (json.errors) {
+    console.error("AniList query errors:", json.errors);
+    return null;
+  }
+
+  const lists = json.data?.MediaListCollection?.lists;
+  if (!lists) return null;
+
+  const entries: AniListUserEntry[] = [];
+  for (const list of lists) {
+    for (const entry of list.entries ?? []) {
+      if (entry.status === "PLANNING") continue;
+      entries.push({
+        mediaId: entry.mediaId,
+        status: entry.status,
+        progress: entry.progress ?? 0,
+        score: entry.score || null,
+        completedAt: entry.completedAt ?? null,
+      });
+    }
+  }
+
+  return entries;
+}
+
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",

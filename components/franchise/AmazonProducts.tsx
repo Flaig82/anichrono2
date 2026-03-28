@@ -1,6 +1,7 @@
 "use client";
 
 import { ShoppingBag, ExternalLink } from "lucide-react";
+import { trackAmazonClick } from "@/lib/utils";
 
 const AMAZON_TAG = "animechrono-20";
 
@@ -46,6 +47,7 @@ export default function AmazonProducts({
             href={buildAmazonUrl(product.query)}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackAmazonClick(`${franchiseTitle} - ${product.label}`)}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
           >
             <ShoppingBag size={14} className="shrink-0 text-aura-muted" />

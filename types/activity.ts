@@ -2,7 +2,7 @@
 export interface LiveActivityItem {
   id: string;
   user_id: string;
-  type: "complete_entry" | "start_watching" | "review" | "rate" | "drop" | "add_to_watchlist";
+  type: "complete_entry" | "start_watching" | "review" | "rate" | "drop" | "add_to_watchlist" | "anilist_import";
   created_at: string;
   metadata: Record<string, unknown>;
   user: {

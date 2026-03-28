@@ -73,9 +73,10 @@ export async function generateMetadata({
   }
 
   const title = `${franchise.title} Watch Order`;
-  const description =
+  const rawDescription =
     franchise.description ??
     `Complete watch order guide for ${franchise.title} — community-curated on AnimeChrono.`;
+  const description = rawDescription.replace(/<[^>]*>/g, "");
 
   return {
     title,
@@ -85,15 +86,13 @@ export async function generateMetadata({
       description,
       type: "website",
       url: `https://animechrono.com/franchise/${franchise.slug}`,
-      images: franchise.cover_image_url
-        ? [{ url: franchise.cover_image_url, alt: franchise.title }]
-        : [],
+      images: [{ url: "/images/og.png", width: 1200, height: 630, alt: franchise.title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: franchise.cover_image_url ? [franchise.cover_image_url] : [],
+      images: ["/images/og.png"],
     },
     alternates: {
       canonical: `https://animechrono.com/franchise/${franchise.slug}`,

@@ -19,7 +19,6 @@ export type QuestCondition =
   | { type: "complete_pre_year"; year: number }
   | { type: "complete_obscure"; max_members: number }
   | { type: "complete_decades"; count: number }
-  | { type: "submit_prediction"; count: number }
   | { type: "submit_proposal"; count: number }
   | { type: "daily_likes"; count: number };
 

@@ -30,15 +30,13 @@ export async function generateMetadata({
       description,
       type: "profile",
       url: `https://animechrono.com/u/${profile.handle}`,
-      images: profile.avatar_url
-        ? [{ url: profile.avatar_url, alt: profile.display_name }]
-        : [],
+      images: [{ url: "/images/og.png", width: 1200, height: 630, alt: profile.display_name }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: profile.avatar_url ? [profile.avatar_url] : [],
+      images: ["/images/og.png"],
     },
     alternates: {
       canonical: `https://animechrono.com/u/${profile.handle}`,

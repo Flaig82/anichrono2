@@ -112,11 +112,17 @@ export default function FranchiseHero({
               {title}
             </h1>
 
-            {/* Description (subtitle) */}
+            {/* Description (subtitle) — AniList descriptions may contain basic HTML */}
             {description && (
-              <p className="line-clamp-2 font-body text-[14px] leading-relaxed text-white/70">
-                {description}
-              </p>
+              <p
+                className="line-clamp-2 font-body text-[14px] leading-relaxed text-white/70 [&_i]:italic [&_b]:font-bold"
+                dangerouslySetInnerHTML={{
+                  __html: description.replace(
+                    /<(?!\/?(?:i|b|em|strong|br)\b)[^>]*>/gi,
+                    "",
+                  ),
+                }}
+              />
             )}
 
             {/* Watchlist CTA (logged in) / Registration CTA (logged out) */}

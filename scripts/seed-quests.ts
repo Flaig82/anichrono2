@@ -130,7 +130,7 @@ const QUESTS: QuestSeed[] = [
     season: null,
   },
 
-  // ── Weekly Quests (5) ──
+  // ── Weekly Quests (4) ──
   {
     category: "weekly",
     title: "Complete 2 episodes from any Chronicle",
@@ -190,22 +190,8 @@ const QUESTS: QuestSeed[] = [
     sort_order: 4,
     season: null,
   },
-  {
-    category: "weekly",
-    title: "Submit a score prediction",
-    flavour_text: null,
-    description: "Predict the final AniList score for an airing show.",
-    aura_type: "scholar",
-    aura_amount: 15,
-    target: 1,
-    condition: { type: "submit_prediction", count: 1 },
-    era_required: null,
-    is_hidden: false,
-    sort_order: 5,
-    season: null,
-  },
 
-  // ── Seasonal Quests (4) ──
+  // ── Seasonal Quests (3) ──
   {
     category: "seasonal",
     title: "Winter Warrior",
@@ -223,21 +209,6 @@ const QUESTS: QuestSeed[] = [
   },
   {
     category: "seasonal",
-    title: "Oracle's Trial",
-    flavour_text: null,
-    description:
-      "Submit 5 score predictions for currently airing shows this season.",
-    aura_type: "scholar",
-    aura_amount: 150,
-    target: 5,
-    condition: { type: "submit_prediction", count: 5 },
-    era_required: null,
-    is_hidden: false,
-    sort_order: 2,
-    season: "winter_2026",
-  },
-  {
-    category: "seasonal",
     title: "Community Pillar",
     flavour_text: null,
     description:
@@ -248,7 +219,7 @@ const QUESTS: QuestSeed[] = [
     condition: { type: "submit_proposal", count: 2 },
     era_required: null,
     is_hidden: false,
-    sort_order: 3,
+    sort_order: 2,
     season: "winter_2026",
   },
   {
@@ -263,11 +234,11 @@ const QUESTS: QuestSeed[] = [
     condition: { type: "write_review", count: 3 },
     era_required: null,
     is_hidden: false,
-    sort_order: 4,
+    sort_order: 3,
     season: "winter_2026",
   },
 
-  // ── Mastery Quests (4: 2 revealed, 2 hidden) ──
+  // ── Mastery Quests (3: 2 revealed, 1 hidden) ──
   {
     category: "mastery",
     title: "Ghost",
@@ -315,21 +286,6 @@ const QUESTS: QuestSeed[] = [
   },
   {
     category: "mastery",
-    title: "Oracle's Eye",
-    flavour_text: "Ten perfect readings. The future bends to your sight.",
-    description:
-      "Achieve 10 perfect score predictions. Unlocks the Oracle's Eye title and tree cosmetic.",
-    aura_type: "scholar",
-    aura_amount: 1000,
-    target: 10,
-    condition: { type: "submit_prediction", count: 10 },
-    era_required: null,
-    is_hidden: true,
-    sort_order: 4,
-    season: null,
-  },
-  {
-    category: "mastery",
     title: "Heart of the Community",
     flavour_text: "500 hearts in a single day. Your devotion echoes across the feed.",
     description:
@@ -340,7 +296,7 @@ const QUESTS: QuestSeed[] = [
     condition: { type: "daily_likes", count: 500 },
     era_required: null,
     is_hidden: true,
-    sort_order: 5,
+    sort_order: 4,
     season: null,
   },
 ];

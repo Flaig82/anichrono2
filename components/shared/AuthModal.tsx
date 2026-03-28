@@ -15,14 +15,14 @@ interface AuthModalProps {
 
 const VALUE_PROPS = {
   default: [
-    { emoji: "🔮", text: "Vote in brackets & earn Oracle Aura" },
     { emoji: "📜", text: "Track your anime journey across every franchise" },
     { emoji: "🌳", text: "Build your unique Aura Tree" },
+    { emoji: "🗺️", text: "Follow community-curated watch orders" },
   ],
   track: [
-    { emoji: "🔮", text: "Vote in brackets & earn Oracle Aura" },
     { emoji: "📜", text: "Track your anime journey across every franchise" },
     { emoji: "🌳", text: "Build your unique Aura Tree" },
+    { emoji: "🗺️", text: "Follow community-curated watch orders" },
   ],
   edit: [
     { emoji: "✏️", text: "Propose edits to watch orders & earn Archivist Aura" },
