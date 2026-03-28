@@ -13,6 +13,7 @@ import {
   Trash2,
   Check,
   Circle,
+  ShoppingBag,
 } from "lucide-react";
 
 interface AdminTodo {
@@ -51,6 +52,11 @@ interface StatsData {
     franchise: { title: string; slug: string } | null;
     entry: { title: string } | null;
   }[];
+  amazonClicks: {
+    total: number;
+    last30d: number;
+    topLinks: { label: string; clicks: number }[];
+  };
 }
 
 const eraColors: Record<string, string> = {
@@ -209,7 +215,7 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           icon={<Users size={16} />}
           label="Total Users"
@@ -235,6 +241,12 @@ export default function AdminOverviewPage() {
           sub={`${totalProposals} total`}
           href="/admin/proposals"
           highlight={pendingProposals > 0}
+        />
+        <StatCard
+          icon={<ShoppingBag size={16} />}
+          label="Amazon Clicks"
+          value={stats.amazonClicks.last30d}
+          sub={`${stats.amazonClicks.total} all time`}
         />
       </div>
 
@@ -279,7 +291,7 @@ export default function AdminOverviewPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={u.handle ? `/u/${u.handle}` : "#"}
+                      href={`/u/${u.handle ?? u.id}`}
                       className="block truncate font-body text-[14px] font-bold tracking-[-0.28px] text-white transition-colors hover:text-aura-orange"
                     >
                       {u.display_name}
@@ -475,6 +487,40 @@ export default function AdminOverviewPage() {
           </div>
         </div>
       </div>
+
+      {/* Amazon Clicks Breakdown */}
+      {stats.amazonClicks.topLinks.length > 0 && (
+        <div className="relative overflow-hidden rounded-xl bg-aura-bg3 p-5">
+          <PatternOverlay />
+          <div className="relative flex items-center gap-2 mb-5">
+            <ShoppingBag size={14} className="text-aura-orange" />
+            <h2
+              className="font-brand text-sm font-bold tracking-tight text-white"
+              style={{ textShadow: "0 0 12px rgba(235, 99, 37, 0.5)" }}
+            >
+              Top Amazon Links
+            </h2>
+            <span className="font-mono text-[10px] text-aura-muted">Last 30 days</span>
+          </div>
+          <div className="relative flex flex-col">
+            {stats.amazonClicks.topLinks.map((link, i) => (
+              <div key={link.label}>
+                <div className="flex items-center justify-between py-2.5">
+                  <span className="font-body text-[13px] tracking-[-0.26px] text-white">
+                    {link.label}
+                  </span>
+                  <span className="font-mono text-[13px] font-bold tabular-nums text-aura-orange">
+                    {link.clicks}
+                  </span>
+                </div>
+                {i < stats.amazonClicks.topLinks.length - 1 && (
+                  <div className="h-px bg-white/[0.06]" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

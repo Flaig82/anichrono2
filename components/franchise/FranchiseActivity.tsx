@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
-import { getRelativeTime } from "@/lib/utils";
+import { getRelativeTime, trackAmazonClick } from "@/lib/utils";
 import AuthModal from "@/components/shared/AuthModal";
 import type { EntryData } from "@/types/proposal";
 import ProposalSheet from "./ProposalSheet";
@@ -288,6 +288,7 @@ export default function FranchiseActivity({
                 href={buildAmazonUrl(product.query)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackAmazonClick(`${franchiseTitle} - ${product.label}`)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.04]"
               >
                 <ShoppingBag size={14} className="shrink-0 text-aura-muted" />

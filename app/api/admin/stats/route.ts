@@ -31,6 +31,10 @@ export async function GET() {
     Date.now() - 15 * 60 * 1000,
   ).toISOString();
 
+  const thirtyDaysAgo = new Date(
+    Date.now() - 30 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
   const [
     totalUsersRes,
     newUsersRes,
@@ -41,6 +45,9 @@ export async function GET() {
     activeUsersRes,
     topUsersRes,
     recentActivityRes,
+    amazonClicksTotalRes,
+    amazonClicks30dRes,
+    amazonClicksByLabelRes,
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),
     supabase
@@ -79,7 +86,30 @@ export async function GET() {
       )
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("amazon_clicks")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("amazon_clicks")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", thirtyDaysAgo),
+    supabase
+      .from("amazon_clicks")
+      .select("label")
+      .gte("created_at", thirtyDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
+
+  // Aggregate Amazon clicks by label
+  const amazonClicksByLabel: Record<string, number> = {};
+  for (const row of amazonClicksByLabelRes.data ?? []) {
+    amazonClicksByLabel[row.label] = (amazonClicksByLabel[row.label] ?? 0) + 1;
+  }
+  const topAmazonLinks = Object.entries(amazonClicksByLabel)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([label, clicks]) => ({ label, clicks }));
 
   const proposalsByStatus: Record<string, number> = {
     open: openProposalsRes.count ?? 0,
@@ -95,5 +125,10 @@ export async function GET() {
     activeUsers: activeUsersRes.count ?? 0,
     topUsers: topUsersRes.data ?? [],
     recentActivity: recentActivityRes.data ?? [],
+    amazonClicks: {
+      total: amazonClicksTotalRes.count ?? 0,
+      last30d: amazonClicks30dRes.count ?? 0,
+      topLinks: topAmazonLinks,
+    },
   });
 }

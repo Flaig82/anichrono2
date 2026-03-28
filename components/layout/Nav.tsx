@@ -4,14 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Compass, Eye, Swords, LogOut, Shield, Settings, Search, X, MessageSquare } from "lucide-react";
+import { BookOpen, Compass, Swords, LogOut, Shield, Settings, Search, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
 const publicNavLinks = [
   { href: "/chronicles", label: "Chronicles", icon: BookOpen },
   { href: "/discover", label: "Discover", icon: Compass },
-  { href: "/predictions", label: "Predictions", icon: Eye },
 ] as const;
 
 const authNavLinks = [
