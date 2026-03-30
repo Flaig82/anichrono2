@@ -6,6 +6,43 @@ const ANILIST_HEADERS: HeadersInit = {
   Accept: "application/json",
 };
 
+/**
+ * Fetch wrapper for AniList with retry + backoff.
+ * AniList sits behind Cloudflare which can 403 on bursts from server IPs.
+ */
+async function anilistFetch(
+  body: string,
+  cacheOpts?: NextFetchRequestConfig,
+): Promise<Response> {
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 500ms, 1500ms
+      await new Promise((r) => setTimeout(r, 500 * Math.pow(3, attempt - 1)));
+    }
+    const res = await fetch(ANILIST_URL, {
+      method: "POST",
+      headers: ANILIST_HEADERS,
+      body,
+      ...(cacheOpts ? { next: cacheOpts } : {}),
+    });
+    if (res.status === 403 || res.status === 429) {
+      console.warn(`AniList returned ${res.status}, retry ${attempt + 1}/${maxRetries}`);
+      continue;
+    }
+    return res;
+  }
+  // Return last attempt even if failed so callers can handle
+  return fetch(ANILIST_URL, {
+    method: "POST",
+    headers: ANILIST_HEADERS,
+    body,
+    ...(cacheOpts ? { next: cacheOpts } : {}),
+  });
+}
+
+type NextFetchRequestConfig = { revalidate?: number | false };
+
 interface AniListMediaResult {
   id: number;
   title: {
@@ -126,11 +163,9 @@ export function formatToEntryType(format: string | null): string {
 }
 
 export async function fetchMediaRelations(id: number): Promise<AniListRelation[]> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: MEDIA_RELATIONS_QUERY, variables: { id } }),
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: MEDIA_RELATIONS_QUERY, variables: { id } }),
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -187,11 +222,9 @@ const SEARCH_MEDIA_QUERY = `
 export async function searchMedia(query: string): Promise<AniListSearchResult[]> {
   if (!query.trim()) return [];
 
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: SEARCH_MEDIA_QUERY, variables: { search: query } }),
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: SEARCH_MEDIA_QUERY, variables: { search: query } }),
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -282,12 +315,10 @@ export async function fetchDiscoverAnime(opts: DiscoverFilters): Promise<AniList
   else variables.format_in = ["TV", "TV_SHORT", "MOVIE", "OVA", "ONA"];
   if (opts.search) variables.search = opts.search;
 
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: DISCOVER_QUERY, variables }),
-    next: { revalidate: 3600 },
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: DISCOVER_QUERY, variables }),
+    { revalidate: 3600 },
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -367,15 +398,13 @@ export async function fetchSeasonalTrending(
   season: "WINTER" | "SPRING" | "SUMMER" | "FALL",
   year: number,
 ): Promise<AniListSeasonalMedia[]> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({
+  const res = await anilistFetch(
+    JSON.stringify({
       query: SEASONAL_TRENDING_QUERY,
       variables: { season, seasonYear: year },
     }),
-    next: { revalidate: 3600 },
-  });
+    { revalidate: 3600 },
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -450,11 +479,9 @@ const MEDIA_BY_ID_FULL_QUERY = `
 `;
 
 export async function fetchMediaByIdFull(id: number): Promise<AniListMediaFull | null> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: MEDIA_BY_ID_FULL_QUERY, variables: { id } }),
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: MEDIA_BY_ID_FULL_QUERY, variables: { id } }),
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -517,12 +544,10 @@ const RECOMMENDATIONS_QUERY = `
 `;
 
 export async function fetchRecommendations(id: number): Promise<AniListRecommendation[]> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: RECOMMENDATIONS_QUERY, variables: { id } }),
-    next: { revalidate: 86400 },
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: RECOMMENDATIONS_QUERY, variables: { id } }),
+    { revalidate: 86400 },
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -569,11 +594,9 @@ const MEDIA_BATCH_QUERY = `
 export async function fetchMediaBatch(ids: number[]): Promise<AniListMediaBatchItem[]> {
   if (ids.length === 0) return [];
 
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: MEDIA_BATCH_QUERY, variables: { ids: ids.slice(0, 50) } }),
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: MEDIA_BATCH_QUERY, variables: { ids: ids.slice(0, 50) } }),
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -626,14 +649,12 @@ const USER_ANIME_LIST_QUERY = `
 export async function fetchUserAnimeList(
   userName: string,
 ): Promise<AniListUserEntry[] | null> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({
+  const res = await anilistFetch(
+    JSON.stringify({
       query: USER_ANIME_LIST_QUERY,
       variables: { userName },
     }),
-  });
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);
@@ -667,11 +688,9 @@ export async function fetchUserAnimeList(
 }
 
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {
-  const res = await fetch(ANILIST_URL, {
-    method: "POST",
-    headers: ANILIST_HEADERS,
-    body: JSON.stringify({ query: MEDIA_BY_ID_QUERY, variables: { id } }),
-  });
+  const res = await anilistFetch(
+    JSON.stringify({ query: MEDIA_BY_ID_QUERY, variables: { id } }),
+  );
 
   if (!res.ok) {
     console.error(`AniList API error: ${res.status} ${res.statusText}`);

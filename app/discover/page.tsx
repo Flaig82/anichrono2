@@ -132,12 +132,11 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
   // Default mode — curated sections by obscurity tier + trending
   const { season, year, label } = getCurrentSeason();
 
-  const [trendingAnime, popularAnime, nicheAnime, hiddenAnime] = await Promise.all([
-    fetchSeasonalTrending(season, year),
-    fetchDiscoverAnime({ sort: "POPULARITY_DESC", popularityGreater: 50000 }),
-    fetchDiscoverAnime({ sort: "SCORE_DESC", popularityGreater: 10000, popularityLesser: 50000 }),
-    fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 }),
-  ]);
+  // Fetch sequentially to avoid triggering AniList's Cloudflare bot protection
+  const trendingAnime = await fetchSeasonalTrending(season, year);
+  const popularAnime = await fetchDiscoverAnime({ sort: "POPULARITY_DESC", popularityGreater: 50000 });
+  const nicheAnime = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityGreater: 10000, popularityLesser: 50000 });
+  const hiddenAnime = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 });
 
   // Convert trending to poster items, filtering out claimed
   const trendingPosters: PosterItem[] = trendingAnime
