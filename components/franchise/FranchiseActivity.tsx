@@ -7,12 +7,12 @@ import {
   GitPullRequestArrow,
   Check,
   Loader2,
-  ThumbsUp,
   ShoppingBag,
   ExternalLink,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { toggleLike } from "@/lib/toggle-like";
+import LikeButton from "@/components/shared/LikeButton";
 import { getRelativeTime, trackAmazonClick } from "@/lib/utils";
 import AuthModal from "@/components/shared/AuthModal";
 import type { EntryData } from "@/types/proposal";
@@ -66,42 +66,6 @@ function PatternOverlay() {
         backgroundRepeat: "repeat",
       }}
     />
-  );
-}
-
-function LikeButton({
-  liked,
-  count,
-  onClick,
-}: {
-  liked: boolean;
-  count: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className="flex items-center gap-1.5 transition-colors"
-      type="button"
-    >
-      {count > 0 && (
-        <span className={`font-mono text-[11px] ${liked ? "text-aura-orange" : "text-aura-muted2"}`}>
-          {count}
-        </span>
-      )}
-      <div
-        className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
-          liked
-            ? "bg-[#eb6325] shadow-[0_4px_14px_rgba(255,131,74,0.48)]"
-            : "bg-white/[0.08] hover:bg-white/[0.14]"
-        }`}
-      >
-        <ThumbsUp size={12} className={liked ? "text-white" : "text-aura-muted2"} />
-      </div>
-    </button>
   );
 }
 
@@ -237,44 +201,22 @@ export default function FranchiseActivity({
       );
       mutate({ ...data, recent: optimisticRecent }, false);
 
-      try {
-        const res = proposal.user_liked
-          ? await fetch(`/api/activity/${proposalId}/like?item_type=proposal`, { method: "DELETE" })
-          : await fetch(`/api/activity/${proposalId}/like`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ item_type: "proposal" }),
-            });
-
-        if (res.status === 401) {
-          mutate(data, false);
-          setShowAuthModal(true);
-          return;
-        }
-
-        if (res.status === 429) {
-          const errData = await res.json().catch(() => ({}));
-          toast.error(errData.error ?? "Too many requests. Slow down.");
-          mutate(data, false);
-          return;
-        }
-
-        if (!res.ok) {
-          mutate(data, false);
-          return;
-        }
-
-        // Success — re-assert with server-confirmed state to survive stale revalidations
-        const result = await res.json();
-        const confirmedRecent = data.recent.map((p) =>
-          p.id === proposalId
-            ? { ...p, user_liked: result.liked, like_count: result.likeCount }
-            : p,
-        );
-        mutate({ ...data, recent: confirmedRecent }, false);
-      } catch {
+      const result = await toggleLike(proposalId, "proposal", proposal.user_liked);
+      if (result === null) {
         mutate(data, false);
+        setShowAuthModal(true);
+        return;
       }
+      if (result.likeCount === -1) {
+        mutate(data, false);
+        return;
+      }
+      const confirmedRecent = data.recent.map((p) =>
+        p.id === proposalId
+          ? { ...p, user_liked: result.liked, like_count: result.likeCount }
+          : p,
+      );
+      mutate({ ...data, recent: confirmedRecent }, false);
     },
     [data, mutate],
   );

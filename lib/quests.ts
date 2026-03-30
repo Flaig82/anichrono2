@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { QuestConditionType, QuestWithProgress, QuestCategory } from "@/types/quest";
 import { awardAura } from "@/lib/aura";
 import type { AuraType } from "@/types/aura";
+import { createNotification } from "@/lib/notifications";
 
 /** Returned when a quest is auto-completed during progressQuests */
 export interface CompletedQuest {
@@ -182,6 +183,13 @@ export async function progressQuests(
         aura_type: quest.aura_type,
         aura_amount: quest.aura_amount,
       });
+
+      // Notify user of quest completion
+      createNotification({
+        userId,
+        type: "quest_complete",
+        message: `You completed: ${quest.title}`,
+      }).catch(() => {});
     }
 
     await supabase

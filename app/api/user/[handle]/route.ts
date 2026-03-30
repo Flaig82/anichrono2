@@ -97,6 +97,60 @@ export async function GET(
     .order("created_at", { ascending: false })
     .limit(10);
 
+  // Batch-fetch like counts + user_liked for activity items
+  const activityIds = (activity ?? []).map((a: { id: string }) => a.id);
+  let likeMap = new Map<string, { like_count: number; user_liked: boolean }>();
+
+  if (activityIds.length > 0) {
+    const { data: likeCounts } = await supabase
+      .from("activity_like")
+      .select("item_id")
+      .eq("item_type", "activity")
+      .in("item_id", activityIds);
+
+    const countByItem = new Map<string, number>();
+    for (const row of likeCounts ?? []) {
+      countByItem.set(row.item_id, (countByItem.get(row.item_id) ?? 0) + 1);
+    }
+
+    // Check if current viewer liked each item
+    const {
+      data: { user: viewer },
+    } = await supabase.auth.getUser();
+    const viewerLikedSet = new Set<string>();
+
+    if (viewer) {
+      const { data: viewerLikes } = await supabase
+        .from("activity_like")
+        .select("item_id")
+        .eq("item_type", "activity")
+        .eq("user_id", viewer.id)
+        .in("item_id", activityIds);
+
+      for (const row of viewerLikes ?? []) {
+        viewerLikedSet.add(row.item_id);
+      }
+    }
+
+    likeMap = new Map(
+      activityIds.map((id: string) => [
+        id,
+        {
+          like_count: countByItem.get(id) ?? 0,
+          user_liked: viewerLikedSet.has(id),
+        },
+      ]),
+    );
+  }
+
+  const activityWithLikes = (activity ?? []).map(
+    (item: { id: string; [key: string]: unknown }) => ({
+      ...item,
+      like_count: likeMap.get(item.id)?.like_count ?? 0,
+      user_liked: likeMap.get(item.id)?.user_liked ?? false,
+    }),
+  );
+
   return NextResponse.json(
     {
       profile,
@@ -107,7 +161,7 @@ export async function GET(
         dropped: droppedCount ?? 0,
         reviews: reviewCount ?? 0,
       },
-      activity: activity ?? [],
+      activity: activityWithLikes,
     },
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" } },
   );

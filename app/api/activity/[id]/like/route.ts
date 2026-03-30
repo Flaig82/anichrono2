@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase-server";
+import { createServiceClient } from "@/lib/supabase-service";
 import { activityLikeSchema } from "@/lib/validations/activity";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
 import { progressQuests } from "@/lib/quests";
 import { NextResponse } from "next/server";
 
@@ -61,6 +63,51 @@ export async function POST(
     .eq("item_type", item_type)
     .eq("item_id", itemId);
 
+  // Notify the content owner about the like (fire-and-forget)
+  (async () => {
+    try {
+      const service = createServiceClient();
+      let ownerId: string | null = null;
+
+      if (item_type === "activity") {
+        const { data: activity } = await service
+          .from("activity")
+          .select("user_id")
+          .eq("id", itemId)
+          .single();
+        ownerId = activity?.user_id ?? null;
+      } else if (item_type === "discussion_reply") {
+        const { data: reply } = await service
+          .from("discussion_reply")
+          .select("author_id")
+          .eq("id", itemId)
+          .single();
+        ownerId = reply?.author_id ?? null;
+      }
+
+      if (ownerId) {
+        // Look up actor display name for the notification message
+        const { data: actor } = await service
+          .from("users")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+        const actorName = actor?.display_name ?? "Someone";
+
+        await createNotification({
+          userId: ownerId,
+          type: "like",
+          actorId: user.id,
+          entityType: item_type,
+          entityId: itemId,
+          message: `${actorName} liked your activity`,
+        });
+      }
+    } catch {
+      // Non-critical — don't fail the like
+    }
+  })();
+
   // Secret mastery quest: hitting 500 daily likes
   if (limit.dailyCount === 500) {
     // Reveal the mastery quest by creating a user_quest row, then auto-complete it
@@ -114,7 +161,7 @@ export async function DELETE(
 
   const { searchParams } = new URL(request.url);
   const item_type = searchParams.get("item_type");
-  if (!item_type || !["activity", "proposal", "franchise"].includes(item_type)) {
+  if (!item_type || !["activity", "proposal", "franchise", "discussion_reply"].includes(item_type)) {
     return NextResponse.json({ error: "Invalid item_type" }, { status: 400 });
   }
 

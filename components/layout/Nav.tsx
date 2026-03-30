@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Compass, Swords, LogOut, Shield, Settings, Search, X, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import NotificationDropdown from "@/components/layout/NotificationDropdown";
 
 const publicNavLinks = [
   { href: "/chronicles", label: "Chronicles", icon: BookOpen },
@@ -198,6 +199,7 @@ export default function Nav() {
                 {profile.display_name}
               </span>
             </Link>
+            <NotificationDropdown />
             <Link
               href="/feedback"
               className="text-aura-muted transition-colors hover:text-white"

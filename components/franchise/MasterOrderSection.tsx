@@ -16,6 +16,7 @@ import FranchiseReviews from "./FranchiseReviews";
 import RightSidebar from "@/components/layout/RightSidebar";
 import RelationsSidebar from "./RelationsSidebar";
 import SimilarAnime from "./SimilarAnime";
+import DiscussionList from "./DiscussionList";
 import AuthModal from "@/components/shared/AuthModal";
 
 interface EntryGroupData {
@@ -189,6 +190,8 @@ export default function MasterOrderSection({
           />
         ) : activeTab === "reviews" ? (
           <FranchiseReviews franchiseId={franchiseId} />
+        ) : activeTab === "discussions" ? (
+          <DiscussionList franchiseId={franchiseId} />
         ) : activeTab === "chronological" ? (
           <>
             {/* Entry list */}
