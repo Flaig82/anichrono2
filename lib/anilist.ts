@@ -1,5 +1,11 @@
 const ANILIST_URL = "https://graphql.anilist.co";
 
+const ANILIST_HEADERS: HeadersInit = {
+  "Content-Type": "application/json",
+  "User-Agent": "AnimeChrono/1.0 (https://animechrono.com)",
+  Accept: "application/json",
+};
+
 interface AniListMediaResult {
   id: number;
   title: {
@@ -122,7 +128,7 @@ export function formatToEntryType(format: string | null): string {
 export async function fetchMediaRelations(id: number): Promise<AniListRelation[]> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: MEDIA_RELATIONS_QUERY, variables: { id } }),
   });
 
@@ -183,7 +189,7 @@ export async function searchMedia(query: string): Promise<AniListSearchResult[]>
 
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: SEARCH_MEDIA_QUERY, variables: { search: query } }),
   });
 
@@ -278,7 +284,7 @@ export async function fetchDiscoverAnime(opts: DiscoverFilters): Promise<AniList
 
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: DISCOVER_QUERY, variables }),
     next: { revalidate: 3600 },
   });
@@ -363,7 +369,7 @@ export async function fetchSeasonalTrending(
 ): Promise<AniListSeasonalMedia[]> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({
       query: SEASONAL_TRENDING_QUERY,
       variables: { season, seasonYear: year },
@@ -446,7 +452,7 @@ const MEDIA_BY_ID_FULL_QUERY = `
 export async function fetchMediaByIdFull(id: number): Promise<AniListMediaFull | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: MEDIA_BY_ID_FULL_QUERY, variables: { id } }),
   });
 
@@ -513,7 +519,7 @@ const RECOMMENDATIONS_QUERY = `
 export async function fetchRecommendations(id: number): Promise<AniListRecommendation[]> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: RECOMMENDATIONS_QUERY, variables: { id } }),
     next: { revalidate: 86400 },
   });
@@ -565,7 +571,7 @@ export async function fetchMediaBatch(ids: number[]): Promise<AniListMediaBatchI
 
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: MEDIA_BATCH_QUERY, variables: { ids: ids.slice(0, 50) } }),
   });
 
@@ -622,7 +628,7 @@ export async function fetchUserAnimeList(
 ): Promise<AniListUserEntry[] | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({
       query: USER_ANIME_LIST_QUERY,
       variables: { userName },
@@ -663,7 +669,7 @@ export async function fetchUserAnimeList(
 export async function fetchMediaById(id: number): Promise<AniListMedia | null> {
   const res = await fetch(ANILIST_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ANILIST_HEADERS,
     body: JSON.stringify({ query: MEDIA_BY_ID_QUERY, variables: { id } }),
   });
 
