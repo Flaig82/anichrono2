@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuraType } from "@/types/aura";
 import { ERA_THRESHOLDS, type Era } from "@/types/aura";
+import { createNotification } from "@/lib/notifications";
+
+const ERA_DISPLAY: Record<Era, string> = {
+  initiate: "Initiate",
+  wanderer: "Wanderer",
+  adept: "Adept",
+  ascendant: "Ascendant",
+};
 
 /** Determine era from total aura score */
 export function getEraForTotal(total: number): Era {
@@ -46,6 +54,14 @@ export async function awardAura(
     });
   }
 
+  // Fetch previous era before recalculating
+  const { data: prevUser } = await supabase
+    .from("users")
+    .select("era")
+    .eq("id", userId)
+    .single();
+  const previousEra = (prevUser?.era as Era) ?? "initiate";
+
   // Recalculate total across all aura types
   const { data: allAura } = await supabase
     .from("user_aura")
@@ -63,6 +79,15 @@ export async function awardAura(
     .from("users")
     .update({ total_aura: totalAura, era })
     .eq("id", userId);
+
+  // Create era promotion notification if era changed
+  if (era !== previousEra) {
+    createNotification({
+      userId,
+      type: "era_promotion",
+      message: `You reached ${ERA_DISPLAY[era]} era!`,
+    }).catch(() => {});
+  }
 
   return { totalAura, era };
 }

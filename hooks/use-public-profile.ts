@@ -21,6 +21,8 @@ interface ActivityItem {
   metadata: Record<string, unknown>;
   franchise: { title: string; slug: string } | null;
   entry: { title: string } | null;
+  like_count: number;
+  user_liked: boolean;
 }
 
 interface PublicProfileResponse {
@@ -37,7 +39,7 @@ const fetcher = (url: string) =>
   });
 
 export function usePublicProfile(handle: string | null) {
-  const { data, error, isLoading } = useSWR<PublicProfileResponse>(
+  const { data, error, isLoading, mutate } = useSWR<PublicProfileResponse>(
     handle ? `/api/user/${handle}` : null,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000 },
@@ -50,5 +52,9 @@ export function usePublicProfile(handle: string | null) {
     activity: data?.activity ?? [],
     isLoading,
     error,
+    mutate,
   };
 }
+
+export type { ActivityItem };
+

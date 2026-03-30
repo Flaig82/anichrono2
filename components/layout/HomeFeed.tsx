@@ -5,45 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ThumbsUp,
   GitPullRequestArrow,
   Plus,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useDitherHover } from "@/hooks/use-dither-hover";
+import { toggleLike } from "@/lib/toggle-like";
+import LikeButton from "@/components/shared/LikeButton";
 import { useLiveActivity, useContentUpdates } from "@/hooks/use-activity-feed";
 import { getRelativeTime } from "@/lib/utils";
 import AuthModal from "@/components/shared/AuthModal";
 import type { LiveActivityItem, ContentUpdateItem } from "@/types/activity";
-
-/* ── Like helper ── */
-
-async function toggleLike(
-  id: string,
-  itemType: "activity" | "proposal" | "franchise",
-  currentlyLiked: boolean,
-): Promise<{ liked: boolean; likeCount: number } | null> {
-  try {
-    const res = currentlyLiked
-      ? await fetch(`/api/activity/${id}/like?item_type=${itemType}`, { method: "DELETE" })
-      : await fetch(`/api/activity/${id}/like`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ item_type: itemType }),
-        });
-
-    if (res.status === 401) return null; // signal auth needed
-    if (res.status === 429) {
-      const data = await res.json().catch(() => ({}));
-      toast.error(data.error ?? "Too many requests. Slow down.");
-      return { liked: currentlyLiked, likeCount: -1 };
-    }
-    if (!res.ok) return { liked: currentlyLiked, likeCount: -1 }; // keep current state
-    return res.json();
-  } catch {
-    return { liked: currentlyLiked, likeCount: -1 };
-  }
-}
 
 /* ── Action display mapping ── */
 
@@ -59,6 +30,8 @@ const ACTION_LABELS: Record<string, string> = {
   add_to_watchlist__watching: "is watching",
   add_to_watchlist__on_hold: "put on hold",
   add_to_watchlist__dropped: "dropped",
+  new_discussion: "started a discussion on",
+  discussion_reply: "replied in a discussion on",
 };
 
 function getActionLabel(item: LiveActivityItem): string {
@@ -89,41 +62,6 @@ function AvatarFallback({ name }: { name: string | null }) {
     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-aura-bg4 font-body text-[13px] font-bold text-aura-muted2">
       {initial}
     </div>
-  );
-}
-
-/* ── Like button ── */
-
-function LikeButton({
-  liked,
-  count,
-  onClick,
-}: {
-  liked: boolean;
-  count: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1.5 transition-colors"
-      type="button"
-    >
-      {count > 0 && (
-        <span className={`font-mono text-[11px] ${liked ? "text-aura-orange" : "text-aura-muted2"}`}>
-          {count}
-        </span>
-      )}
-      <div
-        className={`flex h-6 w-6 items-center justify-center rounded-full transition-all ${
-          liked
-            ? "bg-[#eb6325] shadow-[0_4px_14px_rgba(255,131,74,0.48)]"
-            : "bg-white/[0.08] hover:bg-white/[0.14]"
-        }`}
-      >
-        <ThumbsUp size={12} className={liked ? "text-white" : "text-aura-muted2"} />
-      </div>
-    </button>
   );
 }
 

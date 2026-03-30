@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ListOrdered,
   MessageSquare,
+  MessagesSquare,
   Monitor,
   Pencil,
   X,
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { id: "chronological", label: "Chronological Order", icon: ListOrdered },
   { id: "reviews", label: "Reviews", icon: MessageSquare },
+  { id: "discussions", label: "Discussions", icon: MessagesSquare },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];

@@ -28,6 +28,27 @@ const TAG_STYLES: Record<
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-03-30",
+    title: "Notification center",
+    description:
+      "A bell icon in the nav now shows when someone likes your activity, you complete a quest, or reach a new era. Notifications group repeated likes and can be marked as read individually or all at once.",
+    tag: "feature",
+  },
+  {
+    date: "2026-03-30",
+    title: "Discussion threads on franchise pages",
+    description:
+      "Every franchise now has a Discussions tab where you can start threads and reply to others. Replies support likes, and discussion authors get notified when someone responds.",
+    tag: "feature",
+  },
+  {
+    date: "2026-03-30",
+    title: "Likes on profile activity",
+    description:
+      "Activity items on user profiles now show like counts and a like button, matching the home feed and franchise sidebar.",
+    tag: "improvement",
+  },
+  {
     date: "2026-03-28",
     title: "Unmatched anime after AniList import",
     description:
