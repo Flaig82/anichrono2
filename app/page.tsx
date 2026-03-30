@@ -124,11 +124,11 @@ async function getFranchises(opts: {
 export default async function Home() {
   const supabase = await createClient();
   const { season, year, label } = getCurrentSeason();
-  const [updatedFranchises, seasonalAnime, hiddenGems] = await Promise.all([
-    getFranchises({ sortBy: "updated_at" }),
-    fetchSeasonalTrending(season, year),
-    fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 }),
-  ]);
+  // Fetch Supabase data in parallel (same origin), but AniList calls sequentially
+  // to avoid triggering AniList's Cloudflare bot protection
+  const updatedFranchises = await getFranchises({ sortBy: "updated_at" });
+  const seasonalAnime = await fetchSeasonalTrending(season, year);
+  const hiddenGems = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 });
 
   const excludeIds = updatedFranchises.map((f) => f.id);
   const recentlyAdded = await getFranchises({ sortBy: "created_at", excludeIds });
