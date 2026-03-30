@@ -6,8 +6,9 @@ import PosterRow from "@/components/shared/PosterRow";
 import ViewMoreButton from "@/components/shared/ViewMoreButton";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import { createClient } from "@/lib/supabase-server";
-import { fetchSeasonalTrending, fetchDiscoverAnime } from "@/lib/anilist";
+import { getCachedTrending, getCachedDiscoverList } from "@/lib/anilist-cache";
 import WeeklyQuests from "@/components/quest/DailyQuests";
+import ApiDownBanner from "@/components/shared/ApiDownBanner";
 
 type Season = "WINTER" | "SPRING" | "SUMMER" | "FALL";
 
@@ -124,11 +125,11 @@ async function getFranchises(opts: {
 export default async function Home() {
   const supabase = await createClient();
   const { season, year, label } = getCurrentSeason();
-  // Fetch Supabase data in parallel (same origin), but AniList calls sequentially
-  // to avoid triggering AniList's Cloudflare bot protection
-  const updatedFranchises = await getFranchises({ sortBy: "updated_at" });
-  const seasonalAnime = await fetchSeasonalTrending(season, year);
-  const hiddenGems = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 });
+  const [updatedFranchises, seasonalAnime, hiddenGems] = await Promise.all([
+    getFranchises({ sortBy: "updated_at" }),
+    getCachedTrending(supabase, season, year),
+    getCachedDiscoverList(supabase, "hidden"),
+  ]);
 
   const excludeIds = updatedFranchises.map((f) => f.id);
   const recentlyAdded = await getFranchises({ sortBy: "created_at", excludeIds });
@@ -226,10 +227,14 @@ export default async function Home() {
         )}
 
         {/* Popular this season */}
-        <section className="flex flex-col gap-5">
-          <SectionLabel>Popular {label} {year} season</SectionLabel>
-          <PosterRow posters={seasonPosters} />
-        </section>
+        {seasonPosters.length > 0 ? (
+          <section className="flex flex-col gap-5">
+            <SectionLabel>Popular {label} {year} season</SectionLabel>
+            <PosterRow posters={seasonPosters} />
+          </section>
+        ) : (
+          <ApiDownBanner />
+        )}
 
         {/* Hidden Gems */}
         {hiddenGemPosters.length > 0 && (
