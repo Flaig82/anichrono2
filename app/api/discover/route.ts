@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { fetchDiscoverAnime } from "@/lib/anilist";
+import { queryCachedMedia } from "@/lib/anilist-cache";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
 
@@ -21,7 +21,6 @@ function toPosterItems(
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const sort = searchParams.get("sort") ?? undefined;
   const search = searchParams.get("q") ?? undefined;
   const genre = searchParams.get("genre") ?? undefined;
@@ -30,7 +29,6 @@ export async function GET(request: Request) {
   const year = searchParams.get("year") ?? undefined;
 
   const filters: DiscoverFilters = {
-    page,
     sort,
     search,
     genres: genre ? [genre] : undefined,
@@ -39,17 +37,16 @@ export async function GET(request: Request) {
     formats: format ? [format] : undefined,
   };
 
+  const supabase = await createClient();
+
   const [anime, claimedIds] = await Promise.all([
-    fetchDiscoverAnime(filters),
+    queryCachedMedia(supabase, filters),
     getClaimedAnilistIds(),
   ]);
 
   const results = toPosterItems(anime, claimedIds);
 
-  // AniList returns up to 18 per page; if we got fewer, there are no more
-  const hasMore = anime.length >= 18;
-
-  return NextResponse.json({ results, hasMore }, {
+  return NextResponse.json({ results, hasMore: false }, {
     headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
   });
 }

@@ -12,8 +12,9 @@ import SectionLabel from "@/components/shared/SectionLabel";
 import PosterRow from "@/components/shared/PosterRow";
 import DiscoverHero from "@/components/layout/DiscoverHero";
 import DiscoverLoadMore from "@/components/layout/DiscoverLoadMore";
+import ApiDownBanner from "@/components/shared/ApiDownBanner";
 import { createClient } from "@/lib/supabase-server";
-import { fetchDiscoverAnime, fetchSeasonalTrending } from "@/lib/anilist";
+import { getCachedTrending, getCachedDiscoverList, queryCachedMedia } from "@/lib/anilist-cache";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
 
@@ -81,10 +82,11 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
   };
 
   if (hasFilters) {
-    // Filtered mode — single results section with load more
-    const results = await fetchDiscoverAnime(baseFilters);
+    // Filtered mode — query cache with filters
+    const supabase = await createClient();
+    const results = await queryCachedMedia(supabase, baseFilters);
     const posters = toPosters(results, claimedIds);
-    const hasMore = results.length >= 18;
+    const hasMore = false; // Cache has limited data, no pagination
 
     // Build string params for client-side load more
     const loadMoreParams: Record<string, string> = {};
@@ -129,14 +131,16 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
     );
   }
 
-  // Default mode — curated sections by obscurity tier + trending
+  // Default mode — curated sections from Supabase cache
+  const supabase = await createClient();
   const { season, year, label } = getCurrentSeason();
 
-  // Fetch sequentially to avoid triggering AniList's Cloudflare bot protection
-  const trendingAnime = await fetchSeasonalTrending(season, year);
-  const popularAnime = await fetchDiscoverAnime({ sort: "POPULARITY_DESC", popularityGreater: 50000 });
-  const nicheAnime = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityGreater: 10000, popularityLesser: 50000 });
-  const hiddenAnime = await fetchDiscoverAnime({ sort: "SCORE_DESC", popularityLesser: 10000, popularityGreater: 2000 });
+  const [trendingAnime, popularAnime, nicheAnime, hiddenAnime] = await Promise.all([
+    getCachedTrending(supabase, season, year),
+    getCachedDiscoverList(supabase, "popular"),
+    getCachedDiscoverList(supabase, "niche"),
+    getCachedDiscoverList(supabase, "hidden"),
+  ]);
 
   // Convert trending to poster items, filtering out claimed
   const trendingPosters: PosterItem[] = trendingAnime
@@ -159,6 +163,8 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
       <div className="flex flex-1 flex-col gap-10">
         <DiscoverHero unclaimedCount={totalUnclaimed} />
+
+        {totalUnclaimed === 0 && <ApiDownBanner />}
 
         {trendingPosters.length > 0 && (
           <section className="flex flex-col gap-5">
