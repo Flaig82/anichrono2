@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-anilist",
       "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-news",
+      "schedule": "0 */2 * * *"
     }
   ]
 }

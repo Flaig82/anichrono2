@@ -16,6 +16,7 @@ import FranchiseReviews from "./FranchiseReviews";
 import RightSidebar from "@/components/layout/RightSidebar";
 import RelationsSidebar from "./RelationsSidebar";
 import SimilarAnime from "./SimilarAnime";
+import FranchiseNews from "./FranchiseNews";
 import DiscussionList from "./DiscussionList";
 import AuthModal from "@/components/shared/AuthModal";
 
@@ -275,6 +276,7 @@ export default function MasterOrderSection({
               franchiseTitle={heroTitle}
               currentEntries={entries}
             />
+            <FranchiseNews franchiseId={franchiseId} />
             <SimilarAnime franchiseId={franchiseId} />
           </div>
         )}
@@ -295,6 +297,7 @@ export default function MasterOrderSection({
               franchiseTitle={heroTitle}
               currentEntries={entries}
             />
+            <FranchiseNews franchiseId={franchiseId} />
             <SimilarAnime franchiseId={franchiseId} />
           </RightSidebar>
         )}
