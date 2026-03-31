@@ -37,15 +37,19 @@ async function sync() {
 
     const { score, tier } = getObscurityTier(media.memberCount ?? 0);
 
+    // Only update image fields when AniList returns a value —
+    // never overwrite existing images with null
+    const updates: Record<string, unknown> = {
+      description: media.description,
+      obscurity_score: score,
+      obscurity_tier: tier,
+    };
+    if (media.coverImageUrl) updates.cover_image_url = media.coverImageUrl;
+    if (media.bannerImageUrl) updates.banner_image_url = media.bannerImageUrl;
+
     const { error: updateError } = await supabase
       .from("franchise")
-      .update({
-        cover_image_url: media.coverImageUrl,
-        banner_image_url: media.bannerImageUrl,
-        description: media.description,
-        obscurity_score: score,
-        obscurity_tier: tier,
-      })
+      .update(updates)
       .eq("id", franchise.id);
 
     if (updateError) {
