@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat, Lato } from "next/font/google";
 import Nav from "@/components/layout/Nav";
+import TopProgressBar from "@/components/layout/TopProgressBar";
 import Footer from "@/components/layout/Footer";
 import CookieConsent from "@/components/shared/CookieConsent";
 import AuthInitializer from "@/components/layout/AuthInitializer";
@@ -147,6 +148,7 @@ export default function RootLayout({
         className={`${montserrat.variable} ${lato.variable} font-body antialiased`}
       >
         <AuthInitializer />
+        <TopProgressBar />
         <TooltipProvider delayDuration={300}>
           <Nav />
           {children}
