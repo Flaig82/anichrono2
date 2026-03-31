@@ -1,4 +1,7 @@
+export const revalidate = 1800; // 30 minutes
+
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
 import MasterOrderSection from "@/components/franchise/MasterOrderSection";
@@ -13,7 +16,8 @@ interface EntryGroupData {
   entries: EntryRow[];
 }
 
-async function getFranchise(slug: string) {
+// Deduplicated across generateMetadata + page render within same request
+const getFranchise = cache(async function getFranchise(slug: string) {
   const supabase = await createClient();
 
   const { data: franchise } = await supabase
@@ -25,7 +29,7 @@ async function getFranchise(slug: string) {
     .single();
 
   return franchise;
-}
+});
 
 async function getEntries(franchiseId: string): Promise<EntryRow[]> {
   const supabase = await createClient();

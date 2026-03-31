@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { queryCachedMedia } from "@/lib/anilist-cache";
+import { getClaimedAnilistIds } from "@/lib/claimed-anime";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
 
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
 
   const [anime, claimedIds] = await Promise.all([
     queryCachedMedia(supabase, filters),
-    getClaimedAnilistIds(),
+    getClaimedAnilistIds(supabase),
   ]);
 
   const results = toPosterItems(anime, claimedIds);
@@ -49,18 +50,4 @@ export async function GET(request: Request) {
   return NextResponse.json({ results, hasMore: false }, {
     headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
   });
-}
-
-async function getClaimedAnilistIds(): Promise<Set<number>> {
-  const supabase = await createClient();
-
-  const [{ data: franchises }, { data: entries }] = await Promise.all([
-    supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null).limit(5000),
-    supabase.from("entry").select("anilist_id").not("anilist_id", "is", null).limit(10000),
-  ]);
-
-  const ids = new Set<number>();
-  for (const f of franchises ?? []) if (f.anilist_id) ids.add(f.anilist_id);
-  for (const e of entries ?? []) if (e.anilist_id) ids.add(e.anilist_id);
-  return ids;
 }

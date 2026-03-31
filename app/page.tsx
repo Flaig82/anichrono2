@@ -1,3 +1,5 @@
+export const revalidate = 300; // 5 minutes — avoids re-querying Supabase on every visit
+
 import HeroBanner from "@/components/layout/HeroBanner";
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
@@ -82,7 +84,8 @@ async function getFranchises(opts: {
     .from("order_proposal")
     .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
     .in("franchise_id", franchiseIds)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(50);
 
   const lastEditorMap = new Map<string, { name: string; handle: string | null; id: string; avatar: string | null }>();
   for (const p of proposals ?? []) {

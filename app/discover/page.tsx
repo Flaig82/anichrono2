@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import RightSidebar from "@/components/layout/RightSidebar";
 
+export const revalidate = 600; // 10 minutes
+
 export const metadata: Metadata = {
   title: "Discover",
   description:
@@ -13,8 +15,10 @@ import PosterRow from "@/components/shared/PosterRow";
 import DiscoverHero from "@/components/layout/DiscoverHero";
 import DiscoverLoadMore from "@/components/layout/DiscoverLoadMore";
 import ApiDownBanner from "@/components/shared/ApiDownBanner";
+import FranchiseCard from "@/components/franchise/FranchiseCard";
 import { createClient } from "@/lib/supabase-server";
 import { getCachedTrending, getCachedDiscoverList, queryCachedMedia } from "@/lib/anilist-cache";
+import { getClaimedAnilistIds } from "@/lib/claimed-anime";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
 
@@ -31,19 +35,6 @@ function getCurrentSeason(): { season: Season; year: number; label: string } {
   return { season, year: new Date().getFullYear(), label };
 }
 
-async function getClaimedAnilistIds(): Promise<Set<number>> {
-  const supabase = await createClient();
-
-  const [{ data: franchises }, { data: entries }] = await Promise.all([
-    supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null),
-    supabase.from("entry").select("anilist_id").not("anilist_id", "is", null),
-  ]);
-
-  const ids = new Set<number>();
-  for (const f of franchises ?? []) if (f.anilist_id) ids.add(f.anilist_id);
-  for (const e of entries ?? []) if (e.anilist_id) ids.add(e.anilist_id);
-  return ids;
-}
 
 function toPosters(anime: AniListDiscoverMedia[], claimedIds: Set<number>): PosterItem[] {
   return anime
@@ -57,13 +48,67 @@ function toPosters(anime: AniListDiscoverMedia[], claimedIds: Set<number>): Post
     }));
 }
 
+async function FallbackChronicles() {
+  const supabase = await createClient();
+
+  const { data: franchises } = await supabase
+    .from("franchise")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(6);
+
+  if (!franchises?.length) return null;
+
+  const franchiseIds = franchises.map((f) => f.id);
+
+  const { data: entries } = await supabase
+    .from("entry")
+    .select("franchise_id, entry_type")
+    .in("franchise_id", franchiseIds)
+    .eq("is_removed", false);
+
+  const entryMap = new Map<string, { count: number; types: string[] }>();
+  for (const entry of entries ?? []) {
+    const existing = entryMap.get(entry.franchise_id);
+    if (existing) {
+      existing.count++;
+      existing.types.push(entry.entry_type);
+    } else {
+      entryMap.set(entry.franchise_id, { count: 1, types: [entry.entry_type] });
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-5">
+      <SectionLabel>Browse Chronicles</SectionLabel>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {franchises.map((f) => (
+          <FranchiseCard
+            key={f.slug}
+            slug={f.slug}
+            title={f.title}
+            studio={f.studio ?? ""}
+            yearStarted={f.year_started ?? 0}
+            status={f.status ?? "finished"}
+            genres={f.genres ?? []}
+            bannerImageUrl={f.banner_image_url ?? null}
+            entryCount={entryMap.get(f.id)?.count ?? 0}
+            entryTypes={entryMap.get(f.id)?.types ?? []}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function DiscoverPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const claimedIds = await getClaimedAnilistIds();
+  const supabase = await createClient();
+  const claimedIds = await getClaimedAnilistIds(supabase);
 
   const hasFilters = params.q || params.genre || params.format || params.season || params.year;
 
@@ -83,7 +128,6 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
 
   if (hasFilters) {
     // Filtered mode — query cache with filters
-    const supabase = await createClient();
     const results = await queryCachedMedia(supabase, baseFilters);
     const posters = toPosters(results, claimedIds);
     const hasMore = false; // Cache has limited data, no pagination
@@ -132,7 +176,6 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
   }
 
   // Default mode — curated sections from Supabase cache
-  const supabase = await createClient();
   const { season, year, label } = getCurrentSeason();
 
   const [trendingAnime, popularAnime, nicheAnime, hiddenAnime] = await Promise.all([
@@ -164,7 +207,12 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
       <div className="flex flex-1 flex-col gap-10">
         <DiscoverHero unclaimedCount={totalUnclaimed} />
 
-        {totalUnclaimed === 0 && <ApiDownBanner />}
+        {totalUnclaimed === 0 && (
+          <>
+            <ApiDownBanner />
+            <FallbackChronicles />
+          </>
+        )}
 
         {trendingPosters.length > 0 && (
           <section className="flex flex-col gap-5">
