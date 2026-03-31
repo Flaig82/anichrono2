@@ -34,7 +34,7 @@ async function getFranchises(opts: {
 
   let query = supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, cover_image_url, updated_at, created_at")
     .order(opts.sortBy, { ascending: false })
     .limit(3);
 
@@ -114,6 +114,7 @@ async function getFranchises(opts: {
       status: f.status ?? "finished",
       genres: f.genres ?? [],
       bannerImageUrl: f.banner_image_url ?? null,
+      coverImageUrl: f.cover_image_url ?? null,
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,

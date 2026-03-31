@@ -53,7 +53,7 @@ async function FallbackChronicles() {
 
   const { data: franchises } = await supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, cover_image_url, updated_at")
     .order("updated_at", { ascending: false })
     .limit(6);
 
@@ -92,6 +92,7 @@ async function FallbackChronicles() {
             status={f.status ?? "finished"}
             genres={f.genres ?? []}
             bannerImageUrl={f.banner_image_url ?? null}
+            coverImageUrl={f.cover_image_url ?? null}
             entryCount={entryMap.get(f.id)?.count ?? 0}
             entryTypes={entryMap.get(f.id)?.types ?? []}
           />

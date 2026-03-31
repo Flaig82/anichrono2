@@ -26,6 +26,7 @@ interface FranchiseResult {
   status: string;
   genres: string[];
   bannerImageUrl: string | null;
+  coverImageUrl: string | null;
   entryCount: number;
   entryTypes: string[];
 }
@@ -37,7 +38,7 @@ async function searchFranchises(query: string): Promise<FranchiseResult[]> {
 
   const { data: franchises } = await supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, cover_image_url")
     .ilike("title", `%${query}%`)
     .order("title")
     .limit(12);
@@ -71,6 +72,7 @@ async function searchFranchises(query: string): Promise<FranchiseResult[]> {
     status: f.status ?? "finished",
     genres: f.genres ?? [],
     bannerImageUrl: f.banner_image_url ?? null,
+    coverImageUrl: f.cover_image_url ?? null,
     entryCount: entryMap.get(f.id)?.count ?? 0,
     entryTypes: entryMap.get(f.id)?.types ?? [],
   }));
