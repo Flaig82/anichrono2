@@ -14,6 +14,7 @@ interface FranchiseCardProps {
   status: string;
   genres: string[];
   bannerImageUrl: string | null;
+  coverImageUrl: string | null;
   entryCount: number;
   entryTypes: string[];
   updatedAt?: string;
@@ -27,6 +28,7 @@ export default function FranchiseCard({
   slug,
   title,
   bannerImageUrl,
+  coverImageUrl,
   entryCount,
   updatedByUser,
   updatedByHandle,
@@ -57,6 +59,15 @@ export default function FranchiseCard({
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 33vw"
             quality={60}
+          />
+        ) : coverImageUrl ? (
+          <Image
+            src={coverImageUrl}
+            alt={title}
+            fill
+            className="scale-150 object-cover blur-xl"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            quality={30}
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-aura-muted/30 to-aura-bg3" />
