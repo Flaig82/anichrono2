@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import RightSidebar from "@/components/layout/RightSidebar";
 
+export const revalidate = 1800; // 30 minutes
+
 export const metadata: Metadata = {
   title: "Chronicles",
   description:
@@ -38,7 +40,8 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
   const { data: franchises } = await supabase
     .from("franchise")
     .select("id, title, slug, genres, year_started, studio, status, banner_image_url, obscurity_score, updated_at, created_at")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(500);
 
   if (!franchises) return [];
 
@@ -68,7 +71,8 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       .from("order_proposal")
       .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
       .in("franchise_id", franchiseIds)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
   const entryMap = new Map<string, { count: number; types: string[] }>();

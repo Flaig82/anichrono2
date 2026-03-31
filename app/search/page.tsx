@@ -7,7 +7,8 @@ import SectionLabel from "@/components/shared/SectionLabel";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import PosterRow from "@/components/shared/PosterRow";
 import { createClient } from "@/lib/supabase-server";
-import { fetchDiscoverAnime } from "@/lib/anilist";
+import { queryCachedMedia } from "@/lib/anilist-cache";
+import { getClaimedAnilistIds } from "@/lib/claimed-anime";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia } from "@/lib/anilist";
 import SearchInput from "./SearchInput";
@@ -80,15 +81,10 @@ async function searchUnclaimed(query: string): Promise<PosterItem[]> {
 
   const supabase = await createClient();
 
-  const [results, { data: claimedFranchises }, { data: claimedEntries }] = await Promise.all([
-    fetchDiscoverAnime({ search: query }),
-    supabase.from("franchise").select("anilist_id").not("anilist_id", "is", null),
-    supabase.from("entry").select("anilist_id").not("anilist_id", "is", null),
+  const [results, claimedIds] = await Promise.all([
+    queryCachedMedia(supabase, { search: query }),
+    getClaimedAnilistIds(supabase),
   ]);
-
-  const claimedIds = new Set<number>();
-  for (const f of claimedFranchises ?? []) if (f.anilist_id) claimedIds.add(f.anilist_id);
-  for (const e of claimedEntries ?? []) if (e.anilist_id) claimedIds.add(e.anilist_id);
 
   return results
     .filter((a: AniListDiscoverMedia) => !claimedIds.has(a.id))
