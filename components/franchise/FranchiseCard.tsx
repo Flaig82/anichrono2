@@ -14,7 +14,6 @@ interface FranchiseCardProps {
   status: string;
   genres: string[];
   bannerImageUrl: string | null;
-  coverImageUrl: string | null;
   entryCount: number;
   entryTypes: string[];
   updatedAt?: string;
@@ -24,11 +23,24 @@ interface FranchiseCardProps {
   wasEdited?: boolean;
 }
 
+const PLACEHOLDER_IMAGES = [
+  "/images/image_coming_soon.png",
+  "/images/image_coming_soon_2.png",
+  "/images/image_coming_soon_3.png",
+];
+
+function getPlaceholderImage(slug: string) {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = (hash * 31 + slug.charCodeAt(i)) | 0;
+  }
+  return PLACEHOLDER_IMAGES[Math.abs(hash) % PLACEHOLDER_IMAGES.length]!;
+}
+
 export default function FranchiseCard({
   slug,
   title,
   bannerImageUrl,
-  coverImageUrl,
   entryCount,
   updatedByUser,
   updatedByHandle,
@@ -60,17 +72,15 @@ export default function FranchiseCard({
             sizes="(max-width: 768px) 100vw, 33vw"
             quality={60}
           />
-        ) : coverImageUrl ? (
-          <Image
-            src={coverImageUrl}
-            alt={title}
-            fill
-            className="scale-150 object-cover blur-xl"
-            sizes="(max-width: 768px) 100vw, 33vw"
-            quality={30}
-          />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-aura-muted/30 to-aura-bg3" />
+          <Image
+            src={getPlaceholderImage(slug)}
+            alt="Image coming soon"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            quality={60}
+          />
         )}
       </div>
 
