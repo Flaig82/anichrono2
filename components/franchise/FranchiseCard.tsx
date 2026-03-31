@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ListOrdered } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 
@@ -48,13 +47,12 @@ export default function FranchiseCard({
   wasEdited,
 }: FranchiseCardProps) {
   const { containerRef, canvasRef } = useDitherHover();
-  const router = useRouter();
 
   return (
-    <div
-      ref={containerRef}
-      onClick={() => router.push(`/franchise/${slug}`)}
-      className="relative cursor-pointer overflow-hidden rounded-xl bg-[#212121] p-1 transition-all duration-200 hover:scale-[1.02] hover:bg-[#272727]"
+    <Link
+      href={`/franchise/${slug}`}
+      ref={containerRef as React.RefObject<HTMLElement> as React.RefObject<HTMLAnchorElement>}
+      className="relative block overflow-hidden rounded-xl bg-[#212121] p-1 transition-all duration-200 hover:scale-[1.02] hover:bg-[#272727] active:scale-[0.98] active:opacity-90"
     >
       <canvas
         ref={canvasRef}
@@ -116,13 +114,17 @@ export default function FranchiseCard({
               <span className="font-body text-[12px] tracking-[-0.12px] text-white/50">
                 {wasEdited ? "Updated" : "Created"} by{" "}
                 {updatedByHandle ? (
-                  <Link
-                    href={`/u/${updatedByHandle}`}
-                    className="text-white hover:text-aura-orange hover:underline transition-colors"
-                    onClick={(e) => e.stopPropagation()}
+                  <span
+                    role="link"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.location.href = `/u/${updatedByHandle}`;
+                    }}
+                    className="text-white transition-colors hover:text-aura-orange hover:underline"
                   >
                     {updatedByUser ?? "Unknown"}
-                  </Link>
+                  </span>
                 ) : (
                   <span className="text-white">{updatedByUser ?? "Unknown"}</span>
                 )}
@@ -131,6 +133,6 @@ export default function FranchiseCard({
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
