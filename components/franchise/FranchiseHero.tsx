@@ -14,6 +14,7 @@ interface FranchiseHeroProps {
   title: string;
   description: string | null;
   bannerImageUrl: string | null;
+  coverImageUrl: string | null;
   genres: string[];
 }
 
@@ -37,6 +38,7 @@ export default function FranchiseHero({
   title,
   description,
   bannerImageUrl,
+  coverImageUrl,
   genres,
 }: FranchiseHeroProps) {
   const primaryGenre = genres[0] ?? "Anime";
@@ -75,6 +77,16 @@ export default function FranchiseHero({
               className="object-cover"
               sizes="100vw"
               quality={65}
+              priority
+            />
+          ) : coverImageUrl ? (
+            <Image
+              src={coverImageUrl}
+              alt={title}
+              fill
+              className="scale-150 object-cover blur-xl"
+              sizes="100vw"
+              quality={30}
               priority
             />
           ) : (

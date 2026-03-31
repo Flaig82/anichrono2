@@ -130,6 +130,7 @@ export default function MasterOrderSection({
           title={heroTitle}
           description={heroDescription}
           bannerImageUrl={heroBannerImageUrl}
+          coverImageUrl={franchiseCoverImageUrl}
           genres={heroGenres}
         />
 
