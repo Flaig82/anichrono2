@@ -19,12 +19,14 @@ export default async function FranchiseCreatePage({
   const resolvedParams = await searchParams;
   const anilistIdStr = resolvedParams.anilist;
   if (!anilistIdStr) {
-    redirect("/discover");
+    // No AniList ID — send the user back to Chronicles where the
+    // AddFranchiseDialog lives, not to /discover (dead end).
+    redirect("/chronicles");
   }
 
   const anilistId = parseInt(anilistIdStr, 10);
   if (isNaN(anilistId)) {
-    redirect("/discover");
+    redirect("/chronicles");
   }
 
   // Fetch full media data and relations in parallel

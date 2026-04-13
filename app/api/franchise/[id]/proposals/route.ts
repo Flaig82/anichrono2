@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase-server";
 import { createProposalSchema } from "@/lib/validations/proposal";
+import { requireEra, ERA_UNLOCKS } from "@/lib/era";
+import { entriesEqual } from "@/lib/propose-single-edit";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { checkFieldsForProfanity } from "@/lib/profanity";
 import { NextResponse } from "next/server";
+import type { EntryData } from "@/types/proposal";
 
 const proposalCreateLimiter = createRateLimiter("proposal-create", {
   burstLimit: 3,
@@ -83,15 +86,14 @@ export async function POST(
   }
 
   // Era check — must be Wanderer+ (500+ Aura)
-  const { data: profile } = await supabase
-    .from("users")
-    .select("era")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.era === "initiate") {
+  const gate = await requireEra(supabase, user.id, ERA_UNLOCKS.propose.minAura);
+  if (!gate.ok) {
     return NextResponse.json(
-      { error: "Reach Wanderer era (500 Aura) to propose edits" },
+      {
+        error: "Reach Wanderer era (500 Aura) to propose edits",
+        totalAura: gate.totalAura,
+        needed: gate.needed,
+      },
       { status: 403 },
     );
   }
@@ -150,6 +152,30 @@ export async function POST(
 
   if (!franchise) {
     return NextResponse.json({ error: "Franchise not found" }, { status: 404 });
+  }
+
+  // No-op detection — reject proposals that are byte-identical to the current
+  // master order. Critical for the inline "add a note" micro-contribution
+  // flow, which submits a full entries snapshot by design — without this
+  // check the admin queue would flood with trivial-or-empty diffs.
+  const { data: currentEntryRows } = await supabase
+    .from("entry")
+    .select(
+      "id, franchise_id, position, title, entry_type, episode_start, episode_end, parent_series, anilist_id, is_essential, curator_note, cover_image_url",
+    )
+    .eq("franchise_id", franchiseId)
+    .eq("is_removed", false)
+    .order("position", { ascending: true });
+
+  if (currentEntryRows && currentEntryRows.length > 0) {
+    const current = currentEntryRows as EntryData[];
+    const proposed = result.data.proposed_entries as EntryData[];
+    if (entriesEqual(current, proposed)) {
+      return NextResponse.json(
+        { error: "No changes detected." },
+        { status: 400 },
+      );
+    }
   }
 
   // Create proposal

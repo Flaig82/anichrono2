@@ -14,6 +14,7 @@ import {
   Check,
   Circle,
   ShoppingBag,
+  Compass,
 } from "lucide-react";
 
 interface AdminTodo {
@@ -33,6 +34,7 @@ interface StatsData {
   newUsersThisWeek: number;
   totalFranchises: number;
   proposalsByStatus: Record<string, number>;
+  routesByStatus: { in_review: number; approved: number };
   activeUsers: number;
   topUsers: {
     id: string;
@@ -198,6 +200,8 @@ export default function AdminOverviewPage() {
     (a, b) => a + b,
     0,
   );
+  const pendingRoutes = stats.routesByStatus?.in_review ?? 0;
+  const approvedRoutes = stats.routesByStatus?.approved ?? 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -241,6 +245,13 @@ export default function AdminOverviewPage() {
           sub={`${totalProposals} total`}
           href="/admin/proposals"
           highlight={pendingProposals > 0}
+        />
+        <StatCard
+          icon={<Compass size={16} />}
+          label="Pending Routes"
+          value={pendingRoutes}
+          sub={`${approvedRoutes} live`}
+          highlight={pendingRoutes > 0}
         />
         <StatCard
           icon={<ShoppingBag size={16} />}

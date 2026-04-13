@@ -8,6 +8,7 @@ import ProfileAuraBreakdown from "@/components/profile/ProfileAuraBreakdown";
 import ProfileWatchStats from "@/components/profile/ProfileWatchStats";
 import ProfileActivity from "@/components/profile/ProfileActivity";
 import WatchlistPreview from "@/components/profile/WatchlistPreview";
+import EraProgressBar from "@/components/shared/EraProgressBar";
 import { usePublicProfile } from "@/hooks/use-public-profile";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -72,6 +73,13 @@ export default function ProfilePage() {
               isOwnProfile={isOwnProfile}
             />
             <ProfileWatchStats stats={stats} />
+            {isOwnProfile && (
+              <EraProgressBar
+                currentAura={profile.total_aura ?? 0}
+                variant="hero"
+                highlightUnlock="propose"
+              />
+            )}
             <ProfileAuraBreakdown auraRows={aura} />
             <WatchlistPreview
               handle={handle}

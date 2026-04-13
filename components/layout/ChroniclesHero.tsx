@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Plus, Search, X } from "lucide-react";
 import SectionLabel from "@/components/shared/SectionLabel";
+import AddFranchiseDialog from "@/components/layout/AddFranchiseDialog";
 import { useAuth } from "@/hooks/use-auth";
 
 const selectClasses =
@@ -44,6 +44,7 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
   const searchParams = useSearchParams();
 
   const [searchValue, setSearchValue] = useState(searchParams.get("q") ?? "");
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const activeGenres = searchParams.getAll("genre");
   const activeStatus = searchParams.get("status");
@@ -114,13 +115,14 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
           </div>
 
           {user && (
-            <Link
-              href="/franchise/create"
+            <button
+              type="button"
+              onClick={() => setShowAddDialog(true)}
               className="mt-8 flex shrink-0 items-center gap-1.5 rounded-full border-b border-aura-orange-hover bg-aura-orange px-5 py-3 font-body text-[15px] font-bold tracking-[-0.3px] text-white transition-colors hover:bg-aura-orange-hover"
             >
               <Plus size={16} />
-              Create a Chronicle
-            </Link>
+              Add a franchise
+            </button>
           )}
         </div>
 
@@ -200,6 +202,11 @@ export default function ChroniclesHero({ franchiseCount }: ChroniclesHeroProps) 
           </div>
         </div>
       </div>
+
+      <AddFranchiseDialog
+        open={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+      />
     </div>
   );
 }

@@ -126,6 +126,11 @@ Chronicles are opinionated paths through the master list:
 
 **Architecturally:** Chronicles are just arrays of master entry IDs with an optional order override. They do NOT define their own entries. One entries table, Chronicles are filtered/reordered views of it.
 
+### Important: naming convention — `route` (code) vs "Chronicle" (label)
+The pre-existing `CreateChroniclePage.tsx` / `CreateChronicleDialog.tsx` components are the **franchise creation** flow (create a new franchise page from an AniList search). They predate the Route system and own the "Chronicle" identifier in code.
+
+To avoid a confusing rename, the Route entity described above is called **`route`** at the code level (`/api/route`, `lib/route.ts`, `components/route/`, `route` table) and surfaces to users as **"Chronicle"**. When reading this file, remember: "Chronicle" in user-facing copy = `route` in code. Franchise creation dialogs keep their existing `Chronicle` filenames.
+
 ### Entry types and color coding
 - Episodes → neutral/white (`#EEF0F6`)
 - Movie → orange (`#F97316`)

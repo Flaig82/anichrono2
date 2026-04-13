@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { CheckCircle2, Compass, ShoppingBag } from "lucide-react";
+import { CheckCircle2, Compass, ShoppingBag, StickyNote } from "lucide-react";
 import { cn, trackAmazonClick } from "@/lib/utils";
 
 const AMAZON_TAG = "animechrono-20";
@@ -39,7 +39,14 @@ interface EntryRowProps {
   episodeEnd: number | null;
   position: number;
   initialWatched: number;
+  hasCuratorNote?: boolean;
   onWatch?: (entryId: string, value: number) => void;
+  /**
+   * If provided, shows an inline "propose a note" icon that, when clicked,
+   * opens a popover at the MasterOrderSection level for this entry.
+   * Only pass this for Wanderer+ users on franchise read-mode.
+   */
+  onNoteClick?: (entryId: string) => void;
 }
 
 function getEpisodeCount(
@@ -128,7 +135,9 @@ export default function EntryRow({
   episodeEnd,
   position,
   initialWatched,
+  hasCuratorNote = false,
   onWatch,
+  onNoteClick,
 }: EntryRowProps) {
   const isEpisodeBlock =
     entryType === "episodes" &&
@@ -187,7 +196,7 @@ export default function EntryRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl p-3 transition-colors sm:gap-3 sm:p-[14px]",
+        "group flex items-center gap-2 rounded-xl p-3 transition-colors sm:gap-3 sm:p-[14px]",
         isComplete ? "bg-[#1a2a1a]" : "bg-[#212121]",
       )}
     >
@@ -225,6 +234,26 @@ export default function EntryRow({
       >
         {title}
       </span>
+
+      {/* Curator-note action — Wanderer+ only, opens the note popover */}
+      {onNoteClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNoteClick(entryId);
+          }}
+          title={hasCuratorNote ? "Propose an edit to this note" : "Propose a note"}
+          aria-label="Propose a note"
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-aura-muted transition-all hover:bg-white/[0.08] hover:text-aura-orange",
+            hasCuratorNote
+              ? "text-aura-orange opacity-90"
+              : "opacity-0 group-hover:opacity-100 focus:opacity-100",
+          )}
+        >
+          <StickyNote size={14} />
+        </button>
+      )}
 
       {/* Episode info + stepper for blocks, plain label for singles */}
       {isEpisodeBlock ? (
