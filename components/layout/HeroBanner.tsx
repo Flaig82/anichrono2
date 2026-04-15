@@ -19,12 +19,22 @@ interface OnlineStats {
   users: OnlineUser[];
 }
 
+// Stable per-session floor so the online count never shows 0 or a lonely
+// single-digit. Seeded once on module load — same number for the whole tab
+// session, no flicker between renders.
+const sessionFloor = 8 + Math.floor(Math.random() * 17); // 8–24
+
 function LoggedOutHero() {
   const { data } = useSWR<OnlineStats>("/api/stats/online", statsFetcher, {
     refreshInterval: 120_000,
     dedupingInterval: 60_000,
   });
-  const onlineCount = data?.count ?? 0;
+  // Floor the online count to a believable minimum per session so the site
+  // feels alive at low user counts. The seed is stable per page load (not per
+  // render) so the number doesn't flicker. Replace with real count once
+  // traffic justifies it (~1000+ registered users).
+  const raw = data?.count ?? 0;
+  const onlineCount = Math.max(raw, sessionFloor);
   const onlineUsers = data?.users ?? [];
 
   return (
@@ -99,7 +109,12 @@ function LoggedInHero() {
     refreshInterval: 120_000,
     dedupingInterval: 60_000,
   });
-  const onlineCount = data?.count ?? 0;
+  // Floor the online count to a believable minimum per session so the site
+  // feels alive at low user counts. The seed is stable per page load (not per
+  // render) so the number doesn't flicker. Replace with real count once
+  // traffic justifies it (~1000+ registered users).
+  const raw = data?.count ?? 0;
+  const onlineCount = Math.max(raw, sessionFloor);
   const onlineUsers = data?.users ?? [];
 
   return (
