@@ -119,11 +119,23 @@ function UpdateCard({
   const { containerRef, canvasRef } = useDitherHover();
 
   const Icon = item.kind === "proposal_applied" ? GitPullRequestArrow : Plus;
+  const href = item.slug ? `/franchise/${item.slug}` : undefined;
+
+  const Wrapper = href
+    ? ({ children, className }: { children: React.ReactNode; className?: string }) => (
+        <Link href={href} ref={containerRef as React.RefObject<HTMLElement> as React.RefObject<HTMLAnchorElement>} className={className}>
+          {children}
+        </Link>
+      )
+    : ({ children, className }: { children: React.ReactNode; className?: string }) => (
+        <div ref={containerRef} className={className}>
+          {children}
+        </div>
+      );
 
   return (
-    <div
-      ref={containerRef}
-      className="relative flex flex-col gap-3.5 overflow-hidden rounded-lg p-5"
+    <Wrapper
+      className="relative flex flex-col gap-3.5 overflow-hidden rounded-lg p-5 transition-colors hover:bg-white/[0.03]"
     >
       <canvas
         ref={canvasRef}
@@ -170,7 +182,7 @@ function UpdateCard({
           onClick={() => onLike(item.id, item.kind)}
         />
       </div>
-    </div>
+    </Wrapper>
   );
 }
 

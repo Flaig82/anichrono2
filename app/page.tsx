@@ -20,7 +20,7 @@ async function getFranchises(opts: {
 
   let query = supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at, created_by, creator:created_by(display_name, handle, avatar_url)")
     .order(opts.sortBy, { ascending: false })
     .limit(3);
 
@@ -90,6 +90,12 @@ async function getFranchises(opts: {
 
   return franchises.map((f) => {
     const editor = lastEditorMap.get(f.id);
+    const creator = f.creator as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+
+    // Priority: last editor (from proposals) → original creator → Pyrat fallback
+    const authorName = editor?.name ?? creator?.display_name ?? pyrat.name;
+    const authorHandle = editor?.handle ?? editor?.id ?? creator?.handle ?? pyrat.handle;
+    const authorAvatar = editor?.avatar ?? creator?.avatar_url ?? pyrat.avatar;
 
     return {
       id: f.id,
@@ -103,9 +109,9 @@ async function getFranchises(opts: {
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
-      updatedByUser: editor ? editor.name : pyrat.name,
-      updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
-      updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
+      updatedByUser: authorName,
+      updatedByHandle: authorHandle,
+      updatedByAvatar: authorAvatar ?? undefined,
       wasEdited: !!editor,
     };
   });
@@ -157,7 +163,7 @@ async function getMostPopularFranchises(excludeIds: string[] = []) {
 
   const { data: franchises } = await supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at, created_by, creator:created_by(display_name, handle, avatar_url)")
     .in("slug", MOST_POPULAR_SLUGS);
 
   if (!franchises) return [];
@@ -200,23 +206,55 @@ async function getMostPopularFranchises(excludeIds: string[] = []) {
     }
   }
 
-  return filtered.map((f) => ({
-    id: f.id,
-    slug: f.slug,
-    title: f.title,
-    studio: f.studio ?? "",
-    yearStarted: f.year_started ?? 0,
-    status: f.status ?? "finished",
-    genres: f.genres ?? [],
-    bannerImageUrl: f.banner_image_url ?? null,
-    entryCount: entryMap.get(f.id)?.count ?? 0,
-    entryTypes: entryMap.get(f.id)?.types ?? [],
-    updatedAt: f.updated_at as string,
-    updatedByUser: pyrat.name,
-    updatedByHandle: pyrat.handle,
-    updatedByAvatar: pyrat.avatar ?? undefined,
-    wasEdited: false,
-  }));
+  // Find the most recent proposal author per franchise (if any)
+  const { data: proposals } = await supabase
+    .from("order_proposal")
+    .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
+    .in("franchise_id", franchiseIds)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const lastEditorMap = new Map<string, { name: string; handle: string | null; id: string; avatar: string | null }>();
+  for (const p of proposals ?? []) {
+    if (!lastEditorMap.has(p.franchise_id)) {
+      const user = p.users as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+      if (user) {
+        lastEditorMap.set(p.franchise_id, {
+          name: user.display_name,
+          handle: user.handle,
+          id: p.author_id,
+          avatar: user.avatar_url,
+        });
+      }
+    }
+  }
+
+  return filtered.map((f) => {
+    const editor = lastEditorMap.get(f.id);
+    const creator = f.creator as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+
+    const authorName = editor?.name ?? creator?.display_name ?? pyrat.name;
+    const authorHandle = editor?.handle ?? editor?.id ?? creator?.handle ?? pyrat.handle;
+    const authorAvatar = editor?.avatar ?? creator?.avatar_url ?? pyrat.avatar;
+
+    return {
+      id: f.id,
+      slug: f.slug,
+      title: f.title,
+      studio: f.studio ?? "",
+      yearStarted: f.year_started ?? 0,
+      status: f.status ?? "finished",
+      genres: f.genres ?? [],
+      bannerImageUrl: f.banner_image_url ?? null,
+      entryCount: entryMap.get(f.id)?.count ?? 0,
+      entryTypes: entryMap.get(f.id)?.types ?? [],
+      updatedAt: f.updated_at as string,
+      updatedByUser: authorName,
+      updatedByHandle: authorHandle,
+      updatedByAvatar: authorAvatar ?? undefined,
+      wasEdited: !!editor,
+    };
+  });
 }
 
 export default async function Home() {

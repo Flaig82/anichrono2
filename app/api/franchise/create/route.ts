@@ -123,6 +123,7 @@ export async function POST(request: Request) {
     .insert({
       title: data.title,
       slug,
+      created_by: user.id,
       genres: data.genres,
       year_started: data.year_started,
       studio: data.studio,
