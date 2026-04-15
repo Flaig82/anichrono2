@@ -28,6 +28,97 @@ const TAG_STYLES: Record<
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    date: "2026-04-15",
+    title: "Community Chronicles",
+    description:
+      "Create curated watch routes for any franchise — Newcomer, Completionist, Chronological, or Manga Reader. Pick entries from the master order, drag to reorder, and submit for community review. Approved chronicles appear on the franchise page for everyone.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Draft workflow for chronicles",
+    description:
+      "Chronicles now save as private drafts first. Review your route, then submit for community review when ready. You can withdraw or delete at any time. Admins provide reject reasons so you know what to fix.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Era progress visibility",
+    description:
+      "A progress bar now shows how close you are to reaching Wanderer era across franchise pages, your profile, and contribution gates. Era promotions and franchise completions trigger celebratory toasts.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Contribution surface on franchise pages",
+    description:
+      "Every franchise page now shows a persistent card inviting you to propose edits, add curator notes, or create a chronicle — with copy that adapts based on your era and login status.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Inline curator notes",
+    description:
+      "Wanderer+ users can propose a watch-order note on any entry directly from the franchise page without opening the full editor.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Chronicles tab on franchise pages",
+    description:
+      "Franchise pages now have a dedicated Chronicles tab showing community-curated watch routes, with a full browser page for filtering by route type and sorting.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Vote, follow, and track progress on chronicles",
+    description:
+      "Upvote or downvote community chronicles, follow routes to bookmark them, and track your progress through each route with per-entry checkboxes.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Auto-approval for trusted contributors",
+    description:
+      "Authors with 3+ approved chronicles and zero rejections now skip the admin review queue — their submissions go live immediately.",
+    tag: "feature",
+  },
+  {
+    date: "2026-04-15",
+    title: "Quality guardrails",
+    description:
+      "Duplicate chronicles, routes that match the default order exactly, and single-entry submissions are now automatically blocked at submit time with helpful error messages.",
+    tag: "improvement",
+  },
+  {
+    date: "2026-04-15",
+    title: "Staleness detection",
+    description:
+      "Chronicles that reference entries no longer in the master order, or are missing new entries, now show an amber 'behind main' indicator.",
+    tag: "improvement",
+  },
+  {
+    date: "2026-04-15",
+    title: "Homepage refresh",
+    description:
+      "Removed dead-end Popular Season and Hidden Gems sections. Added Most Popular franchises (from real analytics) and Popular Chronicles sections. Update cards in the sidebar are now clickable.",
+    tag: "improvement",
+  },
+  {
+    date: "2026-04-15",
+    title: "Add a franchise flow",
+    description:
+      "The 'Create a Chronicle' button on the Chronicles index now opens a search-first dialog instead of silently redirecting to Discover.",
+    tag: "fix",
+  },
+  {
+    date: "2026-04-15",
+    title: "Franchise creator attribution",
+    description:
+      "Franchise cards now show the actual creator instead of always defaulting to Pyrat. A new created_by column tracks who created each franchise going forward.",
+    tag: "fix",
+  },
+  {
     date: "2026-03-30",
     title: "Notification center",
     description:
