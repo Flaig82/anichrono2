@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { createServiceClient } from "@/lib/supabase-service";
 import { createFranchiseSchema } from "@/lib/validations/franchise";
 import { awardAura } from "@/lib/aura";
+import { requireEra, ERA_UNLOCKS } from "@/lib/era";
 import { generateSlug } from "@/lib/utils";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { checkFieldsForProfanity } from "@/lib/profanity";
@@ -38,15 +39,14 @@ export async function POST(request: Request) {
   }
 
   // Era check — must be Wanderer+ (500+ Aura)
-  const { data: profile } = await supabase
-    .from("users")
-    .select("era, total_aura")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || (profile.total_aura ?? 0) < 500) {
+  const gate = await requireEra(supabase, user.id, ERA_UNLOCKS.franchise.minAura);
+  if (!gate.ok) {
     return NextResponse.json(
-      { error: "Reach Wanderer era (500 Aura) to create franchises" },
+      {
+        error: "Reach Wanderer era (500 Aura) to create franchises",
+        totalAura: gate.totalAura,
+        needed: gate.needed,
+      },
       { status: 403 },
     );
   }
@@ -123,6 +123,7 @@ export async function POST(request: Request) {
     .insert({
       title: data.title,
       slug,
+      created_by: user.id,
       genres: data.genres,
       year_started: data.year_started,
       studio: data.studio,

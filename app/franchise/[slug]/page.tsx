@@ -176,6 +176,7 @@ export default async function FranchisePage({
       />
       <MasterOrderSection
         franchiseId={franchise.id}
+        franchiseSlug={franchise.slug}
         entries={entries}
         entryGroups={entryGroups}
         franchiseStatus={franchise.status ?? "finished"}

@@ -39,7 +39,7 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
 
   const { data: franchises } = await supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, obscurity_score, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, obscurity_score, updated_at, created_at, created_by, creator:created_by(display_name, handle, avatar_url)")
     .order("updated_at", { ascending: false })
     .limit(500);
 
@@ -103,6 +103,11 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
 
   return franchises.map((f) => {
     const editor = lastEditorMap.get(f.id);
+    const creator = f.creator as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+
+    const authorName = editor?.name ?? creator?.display_name ?? pyrat.name;
+    const authorHandle = editor?.handle ?? editor?.id ?? creator?.handle ?? pyrat.handle;
+    const authorAvatar = editor?.avatar ?? creator?.avatar_url ?? pyrat.avatar;
 
     return {
       slug: f.slug,
@@ -115,9 +120,9 @@ async function getAllFranchises(): Promise<FranchiseItem[]> {
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
-      updatedByUser: editor ? editor.name : pyrat.name,
-      updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
-      updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
+      updatedByUser: authorName,
+      updatedByHandle: authorHandle,
+      updatedByAvatar: authorAvatar ?? undefined,
       wasEdited: !!editor,
       obscurityScore: f.obscurity_score ?? null,
     };

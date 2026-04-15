@@ -9,6 +9,7 @@ import {
   FileText,
   Film,
   MessageSquare,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,6 +18,7 @@ const adminNav = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/proposals", label: "Proposals", icon: FileText },
+  { href: "/admin/routes", label: "Routes", icon: Compass },
   { href: "/admin/franchises", label: "Franchises", icon: Film },
   { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
 ] as const;

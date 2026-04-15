@@ -4,10 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Shield } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useDitherHover } from "@/hooks/use-dither-hover";
 import { useAuth } from "@/hooks/use-auth";
 import AuthModal from "@/components/shared/AuthModal";
+import EraGateModal from "@/components/shared/EraGateModal";
 
 interface PosterCardProps {
   src: string;
@@ -94,68 +95,13 @@ function PosterCard({ src, alt, score, href, anilistId }: PosterCardProps) {
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
-      {showEraGate && (
-        <EraGateModal
-          currentAura={profile?.total_aura ?? 0}
-          onClose={() => setShowEraGate(false)}
-        />
-      )}
-    </>
-  );
-}
-
-function EraGateModal({
-  currentAura,
-  onClose,
-}: {
-  currentAura: number;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+      <EraGateModal
+        open={showEraGate}
+        onClose={() => setShowEraGate(false)}
+        currentAura={profile?.total_aura ?? 0}
+        action="franchise"
       />
-      <div className="relative w-full max-w-[380px] mx-4 rounded-2xl bg-[#1a1a1e] border border-aura-border shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex flex-col items-center gap-4 p-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-aura-orange/10">
-            <Shield size={24} className="text-aura-orange" />
-          </div>
-          <div>
-            <h2 className="font-brand text-lg font-bold text-white">
-              Wanderer Era Required
-            </h2>
-            <p className="mt-1 font-body text-[13px] text-aura-muted2">
-              You need 500 Aura to create a chronicle. Keep watching and
-              completing quests to level up.
-            </p>
-          </div>
-          <div className="w-full rounded-lg bg-aura-bg3 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-aura-muted">
-                Progress
-              </span>
-              <span className="font-mono text-[11px] text-aura-muted2">
-                {currentAura} / 500
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-aura-bg4">
-              <div
-                className="h-full rounded-full bg-aura-orange transition-all"
-                style={{ width: `${Math.min((currentAura / 500) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-full rounded-lg bg-aura-orange px-4 py-2.5 font-body text-sm font-bold text-white transition-colors hover:bg-aura-orange-hover"
-          >
-            Got it
-          </button>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 

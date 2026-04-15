@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Pencil, Shield, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useWatchProgress } from "@/hooks/use-watch-progress";
 import type { EntryData } from "@/types/proposal";
@@ -19,6 +17,10 @@ import SimilarAnime from "./SimilarAnime";
 import FranchiseNews from "./FranchiseNews";
 import DiscussionList from "./DiscussionList";
 import AuthModal from "@/components/shared/AuthModal";
+import EraGateModal from "@/components/shared/EraGateModal";
+import ContributionCard from "./ContributionCard";
+import EntryNotePopover from "./EntryNotePopover";
+import RouteList from "./RouteList";
 
 interface EntryGroupData {
   parentSeries: string;
@@ -29,6 +31,7 @@ interface EntryGroupData {
 
 interface MasterOrderSectionProps {
   franchiseId: string;
+  franchiseSlug: string;
   entries: EntryData[];
   entryGroups: EntryGroupData[];
   franchiseStatus: string;
@@ -42,6 +45,7 @@ interface MasterOrderSectionProps {
 
 export default function MasterOrderSection({
   franchiseId,
+  franchiseSlug,
   entries,
   entryGroups,
   franchiseStatus,
@@ -58,9 +62,32 @@ export default function MasterOrderSection({
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalContext, setAuthModalContext] = useState<"edit" | "track" | "default">("default");
   const [editorAnilistIds, setEditorAnilistIds] = useState<Set<number>>(new Set());
+  const [noteEntryId, setNoteEntryId] = useState<string | null>(null);
   const { user, profile } = useAuth();
   const router = useRouter();
   const { watchMap, updateWatch } = useWatchProgress(franchiseId);
+
+  const canPropose = !!user && (profile?.total_aura ?? 0) >= 500;
+  const noteEntry = useMemo(
+    () => (noteEntryId ? entries.find((e) => e.id === noteEntryId) ?? null : null),
+    [noteEntryId, entries],
+  );
+
+  const handleNoteClick = useCallback(
+    (entryId: string) => {
+      if (!user) {
+        setAuthModalContext("edit");
+        setShowAuthModal(true);
+        return;
+      }
+      if (!canPropose) {
+        setShowEraGate(true);
+        return;
+      }
+      setNoteEntryId(entryId);
+    },
+    [user, canPropose],
+  );
 
   const onWatch = useCallback(
     (entryId: string, value: number) => {
@@ -105,7 +132,7 @@ export default function MasterOrderSection({
       setShowAuthModal(true);
       return;
     }
-    if (profile?.era === "initiate") {
+    if ((profile?.total_aura ?? 0) < 500) {
       setShowEraGate(true);
       return;
     }
@@ -140,43 +167,34 @@ export default function MasterOrderSection({
         )}
 
         {/* Era gate dialog */}
-        {showEraGate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="mx-4 w-full max-w-sm rounded-2xl border border-aura-border bg-[#1a1a1e] p-6 shadow-2xl">
-              <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aura-orange/10">
-                  <Shield size={20} className="text-aura-orange" />
-                </div>
-                <button
-                  onClick={() => setShowEraGate(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-aura-muted transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <h3 className="mt-4 font-body text-[16px] font-bold text-white">
-                Wanderer Era Required
-              </h3>
-              <p className="mt-2 font-body text-[13px] leading-relaxed text-aura-muted2">
-                You need at least <span className="font-bold text-aura-orange">500 Aura</span> to
-                propose edits to watch orders. Complete quests and track your
-                watch history to earn Aura and reach Wanderer era.
-              </p>
-              <div className="mt-2 font-body text-[12px] text-aura-muted">
-                Current: {profile?.total_aura ?? 0} / 500 Aura
-              </div>
-              <button
-                onClick={() => setShowEraGate(false)}
-                className="mt-5 w-full rounded-lg bg-aura-orange py-2 font-body text-[13px] font-bold text-white transition-colors hover:bg-aura-orange-hover"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
+        <EraGateModal
+          open={showEraGate}
+          onClose={() => setShowEraGate(false)}
+          currentAura={profile?.total_aura ?? 0}
+          action="propose"
+        />
+
+        {/* Persistent contribution CTA — states for logged-out / Initiate / Wanderer+ */}
+        {!isEditing && entries.length > 0 && (
+          <ContributionCard
+            onProposeEdit={handleEditClick}
+            franchiseSlug={franchiseSlug}
+          />
+        )}
+
+        {/* Single-entry note popover (Wanderer+ inline contribution) */}
+        {noteEntry && (
+          <EntryNotePopover
+            open={!!noteEntry}
+            franchiseId={franchiseId}
+            entry={noteEntry}
+            allEntries={entries}
+            onClose={() => setNoteEntryId(null)}
+            onSuccess={() => router.refresh()}
+          />
         )}
 
         <FranchiseTabBar
-          onEditClick={handleEditClick}
           isEditing={isEditing}
           onTabChange={(tab) => setActiveTab(tab)}
         />
@@ -190,6 +208,8 @@ export default function MasterOrderSection({
             onSubmitSuccess={handleSubmitSuccess}
             onAnilistIdsChange={setEditorAnilistIds}
           />
+        ) : activeTab === "chronicles" ? (
+          <RouteList franchiseId={franchiseId} franchiseSlug={franchiseSlug} />
         ) : activeTab === "reviews" ? (
           <FranchiseReviews franchiseId={franchiseId} />
         ) : activeTab === "discussions" ? (
@@ -212,39 +232,10 @@ export default function MasterOrderSection({
                   entries={group.entries}
                   watchMap={watchMap}
                   onWatch={onWatch}
+                  onNoteClick={canPropose ? handleNoteClick : undefined}
                 />
               ))}
             </div>
-
-            {/* Inline CTA for logged-out users */}
-            {!user && entries.length > 0 && (
-              <div className="flex flex-col items-center gap-4 rounded-xl border border-aura-border bg-aura-bg2 px-6 py-8 text-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aura-orange/10">
-                  <Pencil size={20} className="text-aura-orange" />
-                </div>
-                <h3 className="font-body text-[16px] font-bold text-white">
-                  Think this order could be improved?
-                </h3>
-                <p className="max-w-md font-body text-[13px] leading-relaxed text-aura-muted2">
-                  Join AnimeChrono to suggest edits, vote on changes, and help
-                  build the best watch orders for every franchise.
-                </p>
-                <div className="flex items-center gap-4">
-                  <Link
-                    href="/signup"
-                    className="flex items-center gap-2 rounded-lg bg-aura-orange px-5 py-2.5 font-body text-[14px] font-bold text-white transition-colors hover:bg-aura-orange-hover"
-                  >
-                    Join &amp; Contribute
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="font-body text-[13px] font-semibold text-aura-muted2 transition-colors hover:text-white"
-                  >
-                    Sign in
-                  </Link>
-                </div>
-              </div>
-            )}
 
             {/* Empty state */}
             {entries.length === 0 && (

@@ -42,6 +42,8 @@ export async function GET() {
     openProposalsRes,
     pendingProposalsRes,
     appliedProposalsRes,
+    pendingRoutesRes,
+    approvedRoutesRes,
     activeUsersRes,
     topUsersRes,
     recentActivityRes,
@@ -67,6 +69,14 @@ export async function GET() {
       .from("order_proposal")
       .select("id", { count: "exact", head: true })
       .eq("status", "applied"),
+    supabase
+      .from("route")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "in_review"),
+    supabase
+      .from("route")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["approved", "canon"]),
     supabase
       .from("users")
       .select("id", { count: "exact", head: true })
@@ -122,6 +132,10 @@ export async function GET() {
     newUsersThisWeek: newUsersRes.count ?? 0,
     totalFranchises: totalFranchisesRes.count ?? 0,
     proposalsByStatus,
+    routesByStatus: {
+      in_review: pendingRoutesRes.count ?? 0,
+      approved: approvedRoutesRes.count ?? 0,
+    },
     activeUsers: activeUsersRes.count ?? 0,
     topUsers: topUsersRes.data ?? [],
     recentActivity: recentActivityRes.data ?? [],

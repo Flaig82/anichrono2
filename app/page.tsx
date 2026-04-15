@@ -4,26 +4,12 @@ import HeroBanner from "@/components/layout/HeroBanner";
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
-import PosterRow from "@/components/shared/PosterRow";
 import ViewMoreButton from "@/components/shared/ViewMoreButton";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
+import RouteCard from "@/components/route/RouteCard";
 import { createClient } from "@/lib/supabase-server";
-import { getCachedTrending, getCachedDiscoverList } from "@/lib/anilist-cache";
 import WeeklyQuests from "@/components/quest/DailyQuests";
-import ApiDownBanner from "@/components/shared/ApiDownBanner";
-
-type Season = "WINTER" | "SPRING" | "SUMMER" | "FALL";
-
-function getCurrentSeason(): { season: Season; year: number; label: string } {
-  const month = new Date().getMonth() + 1;
-  let season: Season;
-  let label: string;
-  if (month <= 3) { season = "WINTER"; label = "Winter"; }
-  else if (month <= 6) { season = "SPRING"; label = "Spring"; }
-  else if (month <= 9) { season = "SUMMER"; label = "Summer"; }
-  else { season = "FALL"; label = "Fall"; }
-  return { season, year: new Date().getFullYear(), label };
-}
+import type { RouteType } from "@/types/route";
 
 
 async function getFranchises(opts: {
@@ -34,7 +20,7 @@ async function getFranchises(opts: {
 
   let query = supabase
     .from("franchise")
-    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at, created_by, creator:created_by(display_name, handle, avatar_url)")
     .order(opts.sortBy, { ascending: false })
     .limit(3);
 
@@ -104,6 +90,12 @@ async function getFranchises(opts: {
 
   return franchises.map((f) => {
     const editor = lastEditorMap.get(f.id);
+    const creator = f.creator as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+
+    // Priority: last editor (from proposals) → original creator → Pyrat fallback
+    const authorName = editor?.name ?? creator?.display_name ?? pyrat.name;
+    const authorHandle = editor?.handle ?? editor?.id ?? creator?.handle ?? pyrat.handle;
+    const authorAvatar = editor?.avatar ?? creator?.avatar_url ?? pyrat.avatar;
 
     return {
       id: f.id,
@@ -117,79 +109,165 @@ async function getFranchises(opts: {
       entryCount: entryMap.get(f.id)?.count ?? 0,
       entryTypes: entryMap.get(f.id)?.types ?? [],
       updatedAt: f.updated_at as string,
-      updatedByUser: editor ? editor.name : pyrat.name,
-      updatedByHandle: editor ? (editor.handle ?? editor.id) : pyrat.handle,
-      updatedByAvatar: (editor?.avatar ?? pyrat.avatar) ?? undefined,
+      updatedByUser: authorName,
+      updatedByHandle: authorHandle,
+      updatedByAvatar: authorAvatar ?? undefined,
+      wasEdited: !!editor,
+    };
+  });
+}
+
+interface PopularRoute {
+  id: string;
+  title: string;
+  route_type: RouteType;
+  entry_ids: string[];
+  summary: string | null;
+  vote_count: number;
+  follower_count: number;
+  is_canon: boolean;
+  franchise: { title: string; slug: string; banner_image_url: string | null } | null;
+  author: { display_name: string; handle: string | null; avatar_url: string | null } | null;
+}
+
+async function getPopularRoutes(): Promise<PopularRoute[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("route")
+    .select(
+      "id, title, route_type, entry_ids, summary, vote_count, follower_count, is_canon, franchise:franchise_id(title, slug, banner_image_url), author:author_id(display_name, handle, avatar_url)",
+    )
+    .in("status", ["approved", "canon"])
+    .order("vote_count", { ascending: false })
+    .limit(6);
+
+  return (data ?? []) as unknown as PopularRoute[];
+}
+
+// Top franchise slugs by page views (from Vercel Analytics).
+// TODO: automate via Vercel Analytics API or self-tracked view counts.
+const MOST_POPULAR_SLUGS = [
+  "my-teen-romantic-comedy-snafu",
+  "inuyasha",
+  "pokemon",
+  "one-piece",
+  "slam-dunk",
+  "prince-of-tennis",
+  "naruto",
+  "kabaneri-of-the-iron-fortress",
+];
+
+async function getMostPopularFranchises(excludeIds: string[] = []) {
+  const supabase = await createClient();
+
+  const { data: franchises } = await supabase
+    .from("franchise")
+    .select("id, title, slug, genres, year_started, studio, status, banner_image_url, updated_at, created_at, created_by, creator:created_by(display_name, handle, avatar_url)")
+    .in("slug", MOST_POPULAR_SLUGS);
+
+  if (!franchises) return [];
+
+  // Filter out any already shown + re-sort to match the hardcoded order
+  const slugOrder = new Map(MOST_POPULAR_SLUGS.map((s, i) => [s, i]));
+  const filtered = franchises
+    .filter((f) => !excludeIds.includes(f.id))
+    .sort((a, b) => (slugOrder.get(a.slug) ?? 99) - (slugOrder.get(b.slug) ?? 99))
+    .slice(0, 6);
+
+  const franchiseIds = filtered.map((f) => f.id);
+
+  const { data: pyratUser } = await supabase
+    .from("users")
+    .select("display_name, handle, avatar_url")
+    .eq("handle", "pyrat")
+    .single();
+
+  const pyrat = {
+    name: pyratUser?.display_name ?? "Pyrat",
+    handle: pyratUser?.handle ?? null,
+    avatar: pyratUser?.avatar_url ?? null,
+  };
+
+  const { data: entries } = await supabase
+    .from("entry")
+    .select("franchise_id, entry_type")
+    .in("franchise_id", franchiseIds)
+    .eq("is_removed", false);
+
+  const entryMap = new Map<string, { count: number; types: string[] }>();
+  for (const entry of entries ?? []) {
+    const existing = entryMap.get(entry.franchise_id);
+    if (existing) {
+      existing.count++;
+      existing.types.push(entry.entry_type);
+    } else {
+      entryMap.set(entry.franchise_id, { count: 1, types: [entry.entry_type] });
+    }
+  }
+
+  // Find the most recent proposal author per franchise (if any)
+  const { data: proposals } = await supabase
+    .from("order_proposal")
+    .select("franchise_id, author_id, created_at, users:author_id(display_name, handle, avatar_url)")
+    .in("franchise_id", franchiseIds)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const lastEditorMap = new Map<string, { name: string; handle: string | null; id: string; avatar: string | null }>();
+  for (const p of proposals ?? []) {
+    if (!lastEditorMap.has(p.franchise_id)) {
+      const user = p.users as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+      if (user) {
+        lastEditorMap.set(p.franchise_id, {
+          name: user.display_name,
+          handle: user.handle,
+          id: p.author_id,
+          avatar: user.avatar_url,
+        });
+      }
+    }
+  }
+
+  return filtered.map((f) => {
+    const editor = lastEditorMap.get(f.id);
+    const creator = f.creator as unknown as { display_name: string; handle: string | null; avatar_url: string | null } | null;
+
+    const authorName = editor?.name ?? creator?.display_name ?? pyrat.name;
+    const authorHandle = editor?.handle ?? editor?.id ?? creator?.handle ?? pyrat.handle;
+    const authorAvatar = editor?.avatar ?? creator?.avatar_url ?? pyrat.avatar;
+
+    return {
+      id: f.id,
+      slug: f.slug,
+      title: f.title,
+      studio: f.studio ?? "",
+      yearStarted: f.year_started ?? 0,
+      status: f.status ?? "finished",
+      genres: f.genres ?? [],
+      bannerImageUrl: f.banner_image_url ?? null,
+      entryCount: entryMap.get(f.id)?.count ?? 0,
+      entryTypes: entryMap.get(f.id)?.types ?? [],
+      updatedAt: f.updated_at as string,
+      updatedByUser: authorName,
+      updatedByHandle: authorHandle,
+      updatedByAvatar: authorAvatar ?? undefined,
       wasEdited: !!editor,
     };
   });
 }
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { season, year, label } = getCurrentSeason();
-  const [updatedFranchises, seasonalAnime, hiddenGems] = await Promise.all([
+  const [updatedFranchises, popularRoutes] = await Promise.all([
     getFranchises({ sortBy: "updated_at" }),
-    getCachedTrending(supabase, season, year),
-    getCachedDiscoverList(supabase, "hidden"),
+    getPopularRoutes(),
   ]);
 
   const excludeIds = updatedFranchises.map((f) => f.id);
-  const recentlyAdded = await getFranchises({ sortBy: "created_at", excludeIds });
-
-  // Collect all AniList IDs (the show itself + its prequels/parents)
-  // to match against our franchise and entry tables
-  const allAnilistIds = seasonalAnime.flatMap((a) => [a.id, ...a.relatedIds]);
-
-  const [{ data: matchedFranchises }, { data: matchedEntries }] = await Promise.all([
-    supabase
-      .from("franchise")
-      .select("anilist_id, slug")
-      .in("anilist_id", allAnilistIds),
-    supabase
-      .from("entry")
-      .select("anilist_id, franchise_id, franchise:franchise_id(slug)")
-      .in("anilist_id", allAnilistIds),
+  const [recentlyAdded, mostPopular] = await Promise.all([
+    getFranchises({ sortBy: "created_at", excludeIds }),
+    getMostPopularFranchises(excludeIds),
   ]);
-
-  // Build a map: AniList ID → franchise slug
-  const anilistToSlug = new Map<number, string>();
-  for (const f of matchedFranchises ?? []) {
-    if (f.anilist_id && f.slug) anilistToSlug.set(f.anilist_id, f.slug);
-  }
-  for (const e of matchedEntries ?? []) {
-    if (e.anilist_id && !anilistToSlug.has(e.anilist_id)) {
-      const franchise = e.franchise as unknown as { slug: string } | null;
-      if (franchise?.slug) anilistToSlug.set(e.anilist_id, franchise.slug);
-    }
-  }
-
-  // Resolve each seasonal anime to a franchise slug
-  const seasonPosters = seasonalAnime.map((a) => {
-    // Check direct match first, then check prequels/parents
-    let slug = anilistToSlug.get(a.id);
-    if (!slug) {
-      for (const relId of a.relatedIds) {
-        slug = anilistToSlug.get(relId);
-        if (slug) break;
-      }
-    }
-
-    return {
-      src: a.coverImageUrl ?? "/images/poster-1.svg",
-      alt: a.titleEnglish ?? a.titleRomaji,
-      score: a.averageScore,
-      href: slug ? `/franchise/${slug}` : undefined,
-      anilistId: slug ? undefined : a.id,
-    };
-  });
-
-  const hiddenGemPosters = hiddenGems.slice(0, 12).map((a) => ({
-    src: a.coverImageUrl ?? "/images/poster-1.svg",
-    alt: a.titleEnglish ?? a.titleRomaji,
-    score: a.averageScore,
-    anilistId: a.id,
-  }));
 
   return (
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
@@ -229,31 +307,47 @@ export default async function Home() {
           </section>
         )}
 
-        {/* Popular this season */}
-        {seasonPosters.length > 0 ? (
-          <section className="flex flex-col gap-5">
-            <SectionLabel>Popular {label} {year} season</SectionLabel>
-            <PosterRow posters={seasonPosters} />
-          </section>
-        ) : (
-          <ApiDownBanner />
-        )}
-
-        {/* Hidden Gems */}
-        {hiddenGemPosters.length > 0 && (
+        {/* Most Popular Franchises — sorted by popularity (lowest obscurity score) */}
+        {mostPopular.length > 0 && (
           <section className="flex flex-col gap-5">
             <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <SectionLabel>Hidden Gems</SectionLabel>
-                <p className="font-body text-[12px] tracking-[-0.12px] text-aura-muted2">
-                  Under 10k members. Chronicle these hidden gems for the community.
-                </p>
-              </div>
-              <ViewMoreButton href="/discover" />
+              <SectionLabel>Most Popular</SectionLabel>
+              <ViewMoreButton href="/chronicles?sort=popular" />
             </div>
-            <PosterRow posters={hiddenGemPosters} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {mostPopular.map((franchise) => (
+                <FranchiseCard key={franchise.slug} {...franchise} />
+              ))}
+            </div>
           </section>
         )}
+
+        {/* Popular Chronicles — top-voted community watch routes */}
+        {popularRoutes.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <SectionLabel>Popular Chronicles</SectionLabel>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {popularRoutes.map((route) => (
+                <RouteCard
+                  key={route.id}
+                  id={route.id}
+                  title={route.title}
+                  routeType={route.route_type}
+                  isCanon={route.is_canon}
+                  entryCount={route.entry_ids.length}
+                  voteCount={route.vote_count}
+                  followerCount={route.follower_count}
+                  franchiseTitle={route.franchise?.title ?? "Unknown"}
+                  franchiseBannerUrl={route.franchise?.banner_image_url ?? null}
+                  authorName={route.author?.display_name ?? "Unknown"}
+                  authorHandle={route.author?.handle ?? null}
+                  authorAvatar={route.author?.avatar_url ?? null}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
       </div>
 
       {/* Sticky sidebar — hidden on mobile */}

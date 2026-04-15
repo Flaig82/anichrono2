@@ -28,6 +28,7 @@ export interface ContentUpdateItem {
   title: string;
   description: string;
   poster: string | null;
+  slug: string | null;
   created_at: string;
   like_count: number;
   user_liked: boolean;

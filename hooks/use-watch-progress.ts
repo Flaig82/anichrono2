@@ -4,6 +4,8 @@ import useSWR, { useSWRConfig } from "swr";
 import { useCallback, useRef } from "react";
 import { useAuth } from "./use-auth";
 import { showQuestToasts } from "@/lib/quest-toast";
+import { showEraPromotionToast, showCompletionNudgeToast } from "@/lib/era-toast";
+import type { Era } from "@/types/aura";
 
 interface WatchData {
   episodes_watched: number;
@@ -15,7 +17,7 @@ const DEBOUNCE_MS = 500;
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function useWatchProgress(franchiseId: string) {
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -63,7 +65,29 @@ export function useWatchProgress(franchiseId: string) {
         });
         if (res.ok && user) {
           const data = await res.json();
+          const prevEra: Era = (profile?.era as Era) ?? "initiate";
+
           showQuestToasts(data.completedQuests);
+
+          // Era promotion — user just crossed a threshold
+          if (data.era && data.era !== prevEra) {
+            showEraPromotionToast(data.era as Era);
+          }
+
+          // Franchise completion nudge — highest-intent contribution moment
+          if (
+            data.franchiseJustCompleted &&
+            data.franchiseTitle &&
+            data.franchiseSlug
+          ) {
+            showCompletionNudgeToast({
+              franchiseTitle: data.franchiseTitle,
+              franchiseSlug: data.franchiseSlug,
+              currentAura: data.totalAura ?? 0,
+              era: (data.era as Era) ?? "initiate",
+            });
+          }
+
           // Revalidate sidebar aura breakdown + profile
           globalMutate(`user-aura-${user.id}`);
           globalMutate("/api/activity/live");
@@ -73,7 +97,7 @@ export function useWatchProgress(franchiseId: string) {
 
       timers.current.set(entryId, timer);
     },
-    [user, franchiseId, mutate],
+    [user, profile, franchiseId, mutate, globalMutate, refreshProfile],
   );
 
   return { watchMap, updateWatch, isLoading, error };

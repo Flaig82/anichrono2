@@ -8,6 +8,7 @@ interface EntryData {
   episode_start: number | null;
   episode_end: number | null;
   position: number;
+  curator_note?: string | null;
 }
 
 interface WatchData {
@@ -24,6 +25,8 @@ interface EntryGroupProps {
   entries: EntryData[];
   watchMap?: Map<string, WatchData>;
   onWatch?: (entryId: string, value: number) => void;
+  /** Wanderer+ only — opens the note popover for a given entry */
+  onNoteClick?: (entryId: string) => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -49,6 +52,7 @@ export default function EntryGroup({
   entries,
   watchMap,
   onWatch,
+  onNoteClick,
 }: EntryGroupProps) {
   // Determine the primary type label from entries
   const fallbackType = entries[0]?.entry_type;
@@ -99,7 +103,9 @@ export default function EntryGroup({
             episodeEnd={entry.episode_end}
             position={entry.position}
             initialWatched={watchMap?.get(entry.id)?.episodes_watched ?? 0}
+            hasCuratorNote={!!entry.curator_note}
             onWatch={onWatch}
+            onNoteClick={onNoteClick}
           />
         ))}
       </div>

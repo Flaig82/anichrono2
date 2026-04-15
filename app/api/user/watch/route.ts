@@ -307,6 +307,10 @@ export async function POST(request: Request) {
 
   // Progress quests based on watch actions
   const completedQuests = [];
+  let franchiseJustCompleted = false;
+  let franchiseTitle: string | null = null;
+  let franchiseSlug: string | null = null;
+
   if (episodesDelta > 0) {
     const cq = await progressQuests(supabase, user.id, "watch_episodes", episodesDelta);
     completedQuests.push(...cq);
@@ -318,11 +322,14 @@ export async function POST(request: Request) {
     // Semantic quest checks — look up franchise metadata for conditional quests
     const { data: franchise } = await supabase
       .from("franchise")
-      .select("year_started, obscurity_tier")
+      .select("title, slug, year_started, obscurity_tier")
       .eq("id", franchise_id)
       .single();
 
     if (franchise) {
+      franchiseTitle = franchise.title ?? null;
+      franchiseSlug = franchise.slug ?? null;
+
       // Pre-year quest (e.g. "Complete a pre-2000 anime")
       if (franchise.year_started && franchise.year_started < 2000) {
         const cq2 = await progressQuests(supabase, user.id, "complete_pre_year", 1);
@@ -356,6 +363,11 @@ export async function POST(request: Request) {
       completedFranchiseEntries &&
       completedFranchiseEntries >= totalFranchiseEntries
     ) {
+      // This entry just became completed, and now all franchise entries are
+      // complete → the franchise as a whole just transitioned to "completed".
+      // Surface this to the client so it can fire the contribution nudge.
+      franchiseJustCompleted = true;
+
       // Only progress "complete_franchise" if franchise has 8+ entries (matches quest condition)
       if (totalFranchiseEntries >= 8) {
         const cq2 = await progressQuests(supabase, user.id, "complete_franchise", 1);
@@ -379,5 +391,8 @@ export async function POST(request: Request) {
     totalAura,
     era,
     completedQuests,
+    franchiseJustCompleted,
+    franchiseTitle,
+    franchiseSlug,
   });
 }
