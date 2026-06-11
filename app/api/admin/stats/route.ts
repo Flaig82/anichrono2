@@ -50,6 +50,7 @@ export async function GET() {
     amazonClicksTotalRes,
     amazonClicks30dRes,
     amazonClicksByLabelRes,
+    lastAnilistSyncRes,
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),
     supabase
@@ -109,6 +110,13 @@ export async function GET() {
       .gte("created_at", thirtyDaysAgo)
       .order("created_at", { ascending: false })
       .limit(500),
+    supabase
+      .from("sync_log")
+      .select("ok, synced, warnings, ran_at")
+      .eq("job", "sync-anilist")
+      .order("ran_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   // Aggregate Amazon clicks by label
@@ -144,5 +152,6 @@ export async function GET() {
       last30d: amazonClicks30dRes.count ?? 0,
       topLinks: topAmazonLinks,
     },
+    lastAnilistSync: lastAnilistSyncRes.data ?? null,
   });
 }

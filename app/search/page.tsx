@@ -7,10 +7,8 @@ import SectionLabel from "@/components/shared/SectionLabel";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import PosterRow from "@/components/shared/PosterRow";
 import { createClient } from "@/lib/supabase-server";
-import { queryCachedMedia } from "@/lib/anilist-cache";
-import { getClaimedAnilistIds } from "@/lib/claimed-anime";
+import { searchAnimePosters } from "@/lib/anime-search";
 import type { PosterItem } from "@/components/shared/PosterRow";
-import type { AniListDiscoverMedia } from "@/lib/anilist";
 import SearchInput from "./SearchInput";
 import CreateFranchisePrompt from "./CreateFranchisePrompt";
 
@@ -81,21 +79,7 @@ async function searchUnclaimed(query: string): Promise<PosterItem[]> {
   if (!query) return [];
 
   const supabase = await createClient();
-
-  const [results, claimedIds] = await Promise.all([
-    queryCachedMedia(supabase, { search: query }),
-    getClaimedAnilistIds(supabase),
-  ]);
-
-  return results
-    .filter((a: AniListDiscoverMedia) => !claimedIds.has(a.id))
-    .slice(0, 12)
-    .map((a: AniListDiscoverMedia) => ({
-      src: a.coverImageUrl ?? "/images/poster-1.svg",
-      alt: a.titleEnglish ?? a.titleRomaji,
-      score: a.averageScore,
-      anilistId: a.id,
-    }));
+  return searchAnimePosters(supabase, query);
 }
 
 interface PageProps {

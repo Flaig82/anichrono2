@@ -15,6 +15,7 @@ import {
   Circle,
   ShoppingBag,
   Compass,
+  RefreshCw,
 } from "lucide-react";
 
 interface AdminTodo {
@@ -59,6 +60,12 @@ interface StatsData {
     last30d: number;
     topLinks: { label: string; clicks: number }[];
   };
+  lastAnilistSync: {
+    ok: boolean;
+    synced: number;
+    warnings: string[];
+    ran_at: string;
+  } | null;
 }
 
 const eraColors: Record<string, string> = {
@@ -203,6 +210,15 @@ export default function AdminOverviewPage() {
   const pendingRoutes = stats.routesByStatus?.in_review ?? 0;
   const approvedRoutes = stats.routesByStatus?.approved ?? 0;
 
+  const sync = stats.lastAnilistSync;
+  const syncStale = sync
+    ? Date.now() - new Date(sync.ran_at).getTime() > 7 * 60 * 60 * 1000
+    : true;
+  const syncProblem = !sync || !sync.ok || syncStale;
+  const syncSub = !sync
+    ? "never run"
+    : `${sync.ok ? "synced" : "FAILED"} ${formatRelativeTime(sync.ran_at)}`;
+
   return (
     <div className="flex flex-col gap-8">
       {/* Page header */}
@@ -258,6 +274,13 @@ export default function AdminOverviewPage() {
           label="Amazon Clicks"
           value={stats.amazonClicks.last30d}
           sub={`${stats.amazonClicks.total} all time`}
+        />
+        <StatCard
+          icon={<RefreshCw size={16} />}
+          label="AniList Sync"
+          value={stats.lastAnilistSync?.synced ?? 0}
+          sub={syncSub}
+          highlight={syncProblem}
         />
       </div>
 

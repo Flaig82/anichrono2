@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { logSync } from "@/lib/sync-log";
 import { fetchSeasonalTrending, fetchDiscoverAnime } from "@/lib/anilist";
 import type { AniListSeasonalMedia, AniListDiscoverMedia } from "@/lib/anilist";
 
@@ -123,6 +124,12 @@ export async function GET(request: Request) {
   const totalFetched = trending.length + popular.length + niche.length + hidden.length;
   if (totalFetched === 0) {
     console.error("AniList sync: all fetches returned empty, keeping stale cache");
+    await logSync(supabase, {
+      job: "sync-anilist",
+      ok: false,
+      error: "All AniList fetches failed",
+      warnings: errors,
+    });
     return NextResponse.json(
       { error: "All AniList fetches failed", details: errors },
       { status: 502 },
@@ -155,6 +162,12 @@ export async function GET(request: Request) {
 
   if (upsertError) {
     console.error("AniList cache upsert error:", upsertError);
+    await logSync(supabase, {
+      job: "sync-anilist",
+      ok: false,
+      error: `Cache upsert failed: ${upsertError.message}`,
+      warnings: errors,
+    });
     return NextResponse.json(
       { error: "Cache upsert failed", details: upsertError.message },
       { status: 500 },
@@ -176,11 +189,26 @@ export async function GET(request: Request) {
 
   if (listError) {
     console.error("Discover list upsert error:", listError);
+    await logSync(supabase, {
+      job: "sync-anilist",
+      ok: false,
+      error: `List upsert failed: ${listError.message}`,
+      warnings: errors,
+    });
     return NextResponse.json(
       { error: "List upsert failed", details: listError.message },
       { status: 500 },
     );
   }
+
+  // Remove orphaned prior-season trending lists (e.g. trending_winter_2026 once
+  // the season rolls to spring). Non-fatal — log and continue.
+  const { error: cleanupError } = await supabase
+    .from("anilist_discover_list")
+    .delete()
+    .like("list_key", "trending_%")
+    .neq("list_key", trendingKey);
+  if (cleanupError) console.error("Discover list cleanup error:", cleanupError);
 
   const result = {
     synced: allRows.length,
@@ -190,6 +218,13 @@ export async function GET(request: Request) {
     hidden: hidden.length,
     warnings: errors.length > 0 ? errors : undefined,
   };
+
+  await logSync(supabase, {
+    job: "sync-anilist",
+    ok: true,
+    synced: allRows.length,
+    warnings: errors,
+  });
 
   console.log("AniList sync complete:", result);
   return NextResponse.json(result);
