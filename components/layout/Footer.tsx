@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SisterSiteCard from "./SisterSiteCard";
 
 export default function Footer() {
   return (
@@ -70,6 +71,11 @@ export default function Footer() {
             Privacy Policy
           </Link>
         </div>
+      </div>
+
+      {/* Sister-site cross-promo */}
+      <div className="mt-8">
+        <SisterSiteCard />
       </div>
 
       {/* Bottom row: Disclosure + copyright */}
