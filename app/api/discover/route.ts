@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { queryCachedMedia } from "@/lib/anilist-cache";
 import { getClaimedAnilistIds } from "@/lib/claimed-anime";
+import { liveSearchPosters } from "@/lib/anime-search";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia, DiscoverFilters } from "@/lib/anilist";
 
@@ -47,7 +48,15 @@ export async function GET(request: Request) {
 
   const results = toPosterItems(anime, claimedIds);
 
-  return NextResponse.json({ results, hasMore: false }, {
+  // Cache holds only ~66 Discover-list titles. For a pure text search that misses
+  // the cache, fall through to live AniList (it can't honor genre/format/season).
+  const isPureSearch = !!search && !genre && !format && !season && !year;
+  const finalResults =
+    results.length === 0 && isPureSearch
+      ? await liveSearchPosters(search, claimedIds)
+      : results;
+
+  return NextResponse.json({ results: finalResults, hasMore: false }, {
     headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
   });
 }

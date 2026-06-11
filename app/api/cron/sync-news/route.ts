@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase-service";
+import { logSync } from "@/lib/sync-log";
 
 const ANN_RSS_URL = "https://www.animenewsnetwork.com/news/rss.xml";
 
@@ -80,6 +81,11 @@ export async function GET(request: Request) {
 
     if (!res.ok) {
       console.error(`ANN RSS fetch failed: ${res.status} ${res.statusText}`);
+      await logSync(supabase, {
+        job: "sync-news",
+        ok: false,
+        error: `ANN RSS fetch failed: ${res.status}`,
+      });
       return NextResponse.json(
         { error: "ANN RSS fetch failed", status: res.status },
         { status: 502 },
@@ -89,6 +95,11 @@ export async function GET(request: Request) {
     xml = await res.text();
   } catch (err) {
     console.error("ANN RSS fetch error:", err);
+    await logSync(supabase, {
+      job: "sync-news",
+      ok: false,
+      error: `ANN RSS fetch error: ${String(err)}`,
+    });
     return NextResponse.json(
       { error: "ANN RSS fetch error", details: String(err) },
       { status: 502 },
@@ -101,6 +112,11 @@ export async function GET(request: Request) {
     items = parseRss(xml);
   } catch (err) {
     console.error("ANN RSS parse error:", err);
+    await logSync(supabase, {
+      job: "sync-news",
+      ok: false,
+      error: `RSS parse failed: ${String(err)}`,
+    });
     return NextResponse.json(
       { error: "RSS parse failed", details: String(err) },
       { status: 502 },
@@ -109,6 +125,11 @@ export async function GET(request: Request) {
 
   if (items.length === 0) {
     console.warn("ANN RSS returned 0 items — keeping stale cache");
+    await logSync(supabase, {
+      job: "sync-news",
+      ok: false,
+      error: "RSS returned 0 items",
+    });
     return NextResponse.json({ error: "RSS returned 0 items" }, { status: 502 });
   }
 
@@ -163,6 +184,11 @@ export async function GET(request: Request) {
 
     if (upsertError) {
       console.error("News cache upsert error:", upsertError);
+      await logSync(supabase, {
+        job: "sync-news",
+        ok: false,
+        error: `Upsert failed: ${upsertError.message}`,
+      });
       return NextResponse.json(
         { error: "Upsert failed", details: upsertError.message },
         { status: 500 },
@@ -193,6 +219,12 @@ export async function GET(request: Request) {
     matched,
     unmatched: rows.length - matched,
   };
+
+  await logSync(supabase, {
+    job: "sync-news",
+    ok: true,
+    synced: rows.length,
+  });
 
   console.log("News sync complete:", result);
   return NextResponse.json(result);
