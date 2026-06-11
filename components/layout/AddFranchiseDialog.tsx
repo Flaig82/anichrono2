@@ -11,6 +11,7 @@ import EraProgressBar from "@/components/shared/EraProgressBar";
 interface AddFranchiseDialogProps {
   open: boolean;
   onClose: () => void;
+  defaultQuery?: string;
 }
 
 const DEBOUNCE_MS = 300;
@@ -31,6 +32,7 @@ const DEBOUNCE_MS = 300;
 export default function AddFranchiseDialog({
   open,
   onClose,
+  defaultQuery,
 }: AddFranchiseDialogProps) {
   const router = useRouter();
   const { profile } = useAuth();
@@ -44,6 +46,7 @@ export default function AddFranchiseDialog({
 
   useEffect(() => {
     if (open && canCreate) {
+      setQuery(defaultQuery ?? "");
       // Defer focus until dialog has mounted
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -51,7 +54,7 @@ export default function AddFranchiseDialog({
       setQuery("");
       setResults([]);
     }
-  }, [open, canCreate]);
+  }, [open, canCreate, defaultQuery]);
 
   useEffect(() => {
     if (!query || query.length < 2) {

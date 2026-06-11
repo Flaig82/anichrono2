@@ -12,6 +12,7 @@ import { getClaimedAnilistIds } from "@/lib/claimed-anime";
 import type { PosterItem } from "@/components/shared/PosterRow";
 import type { AniListDiscoverMedia } from "@/lib/anilist";
 import SearchInput from "./SearchInput";
+import CreateFranchisePrompt from "./CreateFranchisePrompt";
 
 export const metadata: Metadata = {
   title: "Search",
@@ -126,9 +127,12 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
         {/* No results */}
         {noResults && (
-          <p className="font-body text-sm text-aura-muted2">
-            No results found for &ldquo;{q}&rdquo;. Try a different search term.
-          </p>
+          <div className="flex flex-col items-start gap-4">
+            <p className="font-body text-sm text-aura-muted2">
+              No results found for &ldquo;{q}&rdquo;. Try a different search term.
+            </p>
+            <CreateFranchisePrompt query={q} />
+          </div>
         )}
 
         {/* Chronicles section */}

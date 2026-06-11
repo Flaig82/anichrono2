@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface AuthModalProps {
   onClose: () => void;
-  context?: "edit" | "track" | "default";
+  context?: "edit" | "track" | "default" | "create";
 }
 
 const VALUE_PROPS = {
@@ -28,6 +28,11 @@ const VALUE_PROPS = {
     { emoji: "✏️", text: "Propose edits to watch orders & earn Archivist Aura" },
     { emoji: "🗳️", text: "Vote on community changes" },
     { emoji: "📜", text: "Track your progress across every franchise" },
+  ],
+  create: [
+    { emoji: "🗺️", text: "Create franchise pages the community can build on" },
+    { emoji: "📜", text: "Track your anime journey across every franchise" },
+    { emoji: "🌳", text: "Build your unique Aura Tree" },
   ],
 } as const;
 
