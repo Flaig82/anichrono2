@@ -43,5 +43,8 @@ next-env.d.ts
 .idea/
 .vscode/
 
-# Claude Code
-.claude/
+# Claude Code — ignore local state, but ship the generate-list skill
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/generate-list/
