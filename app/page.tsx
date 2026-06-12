@@ -1,6 +1,8 @@
 export const revalidate = 300; // 5 minutes — avoids re-querying Supabase on every visit
 
-import HeroBanner from "@/components/layout/HeroBanner";
+import HeroBanner, { type FeaturedFranchise } from "@/components/layout/HeroBanner";
+import PulseStrip from "@/components/layout/PulseStrip";
+import ContinueWatchingCard from "@/components/layout/ContinueWatchingCard";
 import RightSidebar from "@/components/layout/RightSidebar";
 import HomeFeed from "@/components/layout/HomeFeed";
 import SectionLabel from "@/components/shared/SectionLabel";
@@ -8,6 +10,7 @@ import ViewMoreButton from "@/components/shared/ViewMoreButton";
 import FranchiseCard from "@/components/franchise/FranchiseCard";
 import RouteCard from "@/components/route/RouteCard";
 import { createClient } from "@/lib/supabase-server";
+import { getRelativeTime } from "@/lib/utils";
 import WeeklyQuests from "@/components/quest/DailyQuests";
 import type { RouteType } from "@/types/route";
 
@@ -257,11 +260,41 @@ async function getMostPopularFranchises(excludeIds: string[] = []) {
   });
 }
 
+/** Count of franchises touched in the last 7 days (for the pulse strip). */
+async function getUpdatedThisWeekCount(): Promise<number> {
+  const supabase = await createClient();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { count } = await supabase
+    .from("franchise")
+    .select("id", { count: "exact", head: true })
+    .gte("updated_at", weekAgo);
+
+  return count ?? 0;
+}
+
 export default async function Home() {
-  const [updatedFranchises, popularRoutes] = await Promise.all([
+  const [updatedFranchises, popularRoutes, updatedThisWeek] = await Promise.all([
     getFranchises({ sortBy: "updated_at" }),
     getPopularRoutes(),
+    getUpdatedThisWeekCount(),
   ]);
+
+  // Featured = most recently updated franchise that has banner art (falls back
+  // to the first updated franchise). Derived from data already fetched above.
+  const featuredSource =
+    updatedFranchises.find((f) => f.bannerImageUrl) ?? updatedFranchises[0];
+  const featured: FeaturedFranchise | null = featuredSource
+    ? {
+        title: featuredSource.title,
+        slug: featuredSource.slug,
+        bannerImageUrl: featuredSource.bannerImageUrl,
+        entryCount: featuredSource.entryCount,
+        genres: featuredSource.genres,
+        updatedAgo: getRelativeTime(featuredSource.updatedAt),
+        updatedBy: featuredSource.updatedByUser,
+      }
+    : null;
 
   const excludeIds = updatedFranchises.map((f) => f.id);
   const [recentlyAdded, mostPopular] = await Promise.all([
@@ -273,8 +306,14 @@ export default async function Home() {
     <main className="flex gap-6 px-4 pt-6 pb-16 md:px-8 md:pt-10 lg:gap-12 lg:px-[120px]">
       {/* Main content */}
       <div className="flex flex-1 flex-col gap-10">
-        {/* Hero */}
-        <HeroBanner />
+        {/* Pulse strip — logged-in only, self-hides */}
+        <PulseStrip updatedThisWeek={updatedThisWeek} />
+
+        {/* Featured franchise hero */}
+        <HeroBanner featured={featured} />
+
+        {/* Continue watching — logged-in only, self-hides */}
+        <ContinueWatchingCard />
 
         {/* Weekly Quests — logged-in users only */}
         <WeeklyQuests />
