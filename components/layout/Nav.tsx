@@ -8,6 +8,7 @@ import { BookOpen, Compass, Swords, LogOut, Shield, Settings, Search, X, Message
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
+import ChronoNetworkSwitcher from "@/components/layout/ChronoNetworkSwitcher";
 
 const publicNavLinks = [
   { href: "/chronicles", label: "Chronicles", icon: BookOpen },
@@ -62,19 +63,8 @@ export default function Nav() {
       <div className="relative z-10 flex items-center justify-between">
       {/* Left: Logo + Nav pills */}
       <div className="flex items-center gap-2 md:gap-4">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex h-9 items-center gap-1.5 rounded-lg px-2 py-1.5 md:px-5"
-        >
-          <span className="text-base text-aura-orange-hover font-bold leading-none">
-            順
-          </span>
-          <span className="hidden font-brand text-base uppercase leading-none text-white tracking-[-0.8px] sm:inline">
-            <span className="font-bold">Anime</span>
-            <span className="font-medium">chrono</span>
-          </span>
-        </Link>
+        {/* Logo + Chrono Network switcher */}
+        <ChronoNetworkSwitcher />
 
         {/* Nav pills */}
         {publicNavLinks.map(({ href, label, icon: Icon }) => {
