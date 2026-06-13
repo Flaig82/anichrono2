@@ -24,3 +24,4 @@ Add names manually to queue specific franchises, or let count mode (`/generate-l
 - [x] SPY x FAMILY (spy-x-family)
 - [x] Death Parade (death-parade)
 - [x] Mushoku Tensei: Jobless Reincarnation (mushoku-tensei-jobless-reincarnation)
+- [x] Hell's Paradise (hell-s-paradise)
