@@ -235,16 +235,25 @@ const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE
   auth: { persistSession: false },
 });
 
-// Attribution: the site's curator (first admin — mirrors the UI claim flow).
-const { data: curator } = await supabase
-  .from("users")
-  .select("id, display_name")
-  .eq("is_admin", true)
-  .order("created_at", { ascending: true })
-  .limit(1)
-  .maybeSingle();
+// Attribution: who shows as "Created by" on the franchise. Set
+// SEED_CURATOR_HANDLE in .env.local to pin it to a specific user's handle;
+// otherwise fall back to the site's first admin (mirrors the UI claim flow).
+let curatorQuery = supabase.from("users").select("id, display_name");
+if (env.SEED_CURATOR_HANDLE) {
+  curatorQuery = curatorQuery.eq("handle", env.SEED_CURATOR_HANDLE).limit(1);
+} else {
+  curatorQuery = curatorQuery
+    .eq("is_admin", true)
+    .order("created_at", { ascending: true })
+    .limit(1);
+}
+const { data: curator } = await curatorQuery.maybeSingle();
 if (!curator) {
-  console.error("No admin user found for attribution (users.is_admin = true).");
+  console.error(
+    env.SEED_CURATOR_HANDLE
+      ? `No user found with handle "${env.SEED_CURATOR_HANDLE}" (SEED_CURATOR_HANDLE in .env.local).`
+      : "No admin user found for attribution (users.is_admin = true).",
+  );
   process.exit(1);
 }
 

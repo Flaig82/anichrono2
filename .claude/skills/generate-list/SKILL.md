@@ -18,6 +18,7 @@ Wraps the two seed scripts into one command. It writes to the **production** Sup
 1. `pwd` is the repo root and `scripts/seed-watch-order.mjs` exists.
 2. `.env.local` exists and contains `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. If missing, stop and tell the user — no DB writes are possible.
    - **AniList needs no API key** (keyless public GraphQL) — there is no Twitch/IGDB equivalent to check here.
+   - **Attribution (optional):** set `SEED_CURATOR_HANDLE=<your-handle>` in `.env.local` to control who shows as "Created by" on seeded franchises. Unset → falls back to the site's first admin.
 
 ## Named mode
 
