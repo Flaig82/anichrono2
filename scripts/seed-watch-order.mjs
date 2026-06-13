@@ -56,6 +56,9 @@ const anilistIdArg = argValue("--anilist");
 const queryArg = argValue("--query");
 const titleArg = argValue("--title");
 const dryRun = args.includes("--dry-run");
+// --draft: stage the franchise as a hidden draft for admin review instead of
+// publishing it live. The +50 Archivist aura is deferred until approval.
+const asDraft = args.includes("--draft");
 const excluded = new Set(
   (argValue("--exclude") ?? "")
     .split(",")
@@ -310,6 +313,7 @@ const { data: franchise, error: fErr } = await supabase
     description: main.description ?? null,
     obscurity_score: score,
     obscurity_tier: tier,
+    review_status: asDraft ? "draft" : "live",
   })
   .select("id, slug")
   .single();
@@ -343,21 +347,26 @@ if (eErr) {
 }
 
 // +50 Archivist, matching the UI claim flow (awardAura in lib/aura.ts).
-const { data: aura } = await supabase
-  .from("user_aura")
-  .select("id, value")
-  .eq("user_id", curator.id)
-  .eq("aura_type", "archivist")
-  .maybeSingle();
-if (aura) {
-  await supabase.from("user_aura").update({ value: aura.value + 50, last_calculated: new Date().toISOString() }).eq("id", aura.id);
-} else {
-  await supabase.from("user_aura").insert({ user_id: curator.id, aura_type: "archivist", value: 50, last_calculated: new Date().toISOString() });
+// For drafts the aura is deferred until an admin approves on /admin/review,
+// so we don't bank reputation for franchises that may be rejected.
+if (!asDraft) {
+  const { data: aura } = await supabase
+    .from("user_aura")
+    .select("id, value")
+    .eq("user_id", curator.id)
+    .eq("aura_type", "archivist")
+    .maybeSingle();
+  if (aura) {
+    await supabase.from("user_aura").update({ value: aura.value + 50, last_calculated: new Date().toISOString() }).eq("id", aura.id);
+  } else {
+    await supabase.from("user_aura").insert({ user_id: curator.id, aura_type: "archivist", value: 50, last_calculated: new Date().toISOString() });
+  }
+  const { data: allAura } = await supabase.from("user_aura").select("value").eq("user_id", curator.id);
+  const totalAura = (allAura ?? []).reduce((sum, a) => sum + a.value, 0);
+  await supabase.from("users").update({ total_aura: totalAura }).eq("id", curator.id);
 }
-const { data: allAura } = await supabase.from("user_aura").select("value").eq("user_id", curator.id);
-const totalAura = (allAura ?? []).reduce((sum, a) => sum + a.value, 0);
-await supabase.from("users").update({ total_aura: totalAura }).eq("id", curator.id);
 
-console.log(`\nCreated: ${SITE_URL}/franchise/${franchise.slug} (as ${curator.display_name}, +50 Archivist)`);
+const status_note = asDraft ? "DRAFT — pending admin review at /admin/review" : `live (as ${curator.display_name}, +50 Archivist)`;
+console.log(`\nCreated: ${SITE_URL}/franchise/${franchise.slug} (${status_note})`);
 console.log(`Next: research the watch order, then run:`);
 console.log(`  node scripts/apply-watch-order.mjs ${franchise.slug} <plan.json>`);
