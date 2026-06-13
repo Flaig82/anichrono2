@@ -23,10 +23,7 @@ export async function GET(request: Request) {
   const results = await searchMedia(query);
 
   const supabase = await createClient();
-  const onSiteMap = await resolveOnSiteSlugs(
-    supabase,
-    results.map((r) => r.id),
-  );
+  const onSiteMap = await resolveOnSiteSlugs(supabase, results);
 
   const tagged = results.map((r) => ({
     ...r,
