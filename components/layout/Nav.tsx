@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Compass, Swords, LogOut, Shield, Settings, Search, X, MessageSquare } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { BookOpen, Compass, Swords, LogOut, Shield, Settings, Search, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import NotificationDropdown from "@/components/layout/NotificationDropdown";
 import ChronoNetworkSwitcher from "@/components/layout/ChronoNetworkSwitcher";
+import SearchTypeahead from "@/components/layout/SearchTypeahead";
 
 const publicNavLinks = [
   { href: "/chronicles", label: "Chronicles", icon: BookOpen },
@@ -21,25 +22,12 @@ const authNavLinks = [
 
 export default function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, profile, isLoading, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input when search opens
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus();
-  }, [searchOpen]);
-
-  // Close search on Escape
+  // Cmd/Ctrl+K to open search (Escape-to-close lives in SearchTypeahead)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && searchOpen) {
-        setSearchOpen(false);
-        setSearchQuery("");
-      }
-      // Cmd/Ctrl+K to open search
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearchOpen(true);
@@ -47,16 +35,7 @@ export default function Nav() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchOpen]);
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-    setSearchOpen(false);
-    setSearchQuery("");
-  }
+  }, []);
 
   return (
     <nav className="relative isolate sticky top-0 z-50 px-4 md:px-8 lg:px-[120px] py-3 bg-gradient-to-b from-[rgba(10,10,12,0.9)] to-transparent before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:backdrop-blur-[10px] before:[mask-image:linear-gradient(to_bottom,black,transparent)] after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:backdrop-blur-[100px] after:[mask-image:linear-gradient(to_bottom,black_0%,transparent_50%)]">
@@ -122,26 +101,7 @@ export default function Nav() {
 
         {/* Search */}
         {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} className="flex items-center">
-            <div className="flex items-center gap-2 rounded-lg bg-[rgba(49,49,49,0.6)] px-3 py-2.5 backdrop-blur-[10px]">
-              <Search size={14} className="shrink-0 text-aura-muted" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search anime..."
-                className="w-[160px] bg-transparent font-body text-[13px] tracking-[-0.26px] text-white placeholder:text-aura-muted outline-none md:w-[240px]"
-              />
-              <button
-                type="button"
-                onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
-                className="shrink-0 text-aura-muted transition-colors hover:text-white"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </form>
+          <SearchTypeahead open={searchOpen} onClose={() => setSearchOpen(false)} />
         ) : (
           <button
             onClick={() => setSearchOpen(true)}
